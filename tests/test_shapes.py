@@ -193,3 +193,92 @@ def test_cube_front_face_draws_single_shade_char():
     frame = render_frame(shapes.cube(), Rotation(0.0, 0.0), 80, 24)
 
     assert set(frame) - {" ", "\n"} == {"*"}
+
+
+def _vectors_close(actual: tuple[float, ...], expected: tuple[float, ...]) -> bool:
+    """2つの向きの各成分が絶対誤差 1e-9 で等しいかを返す。"""
+    return all(
+        math.isclose(a, e, abs_tol=1e-9) for a, e in zip(actual, expected, strict=True)
+    )
+
+
+def _dot(left: tuple[float, ...], right: tuple[float, ...]) -> float:
+    """2つの向きの内積を返す。"""
+    return sum(a * b for a, b in zip(left, right, strict=True))
+
+
+def test_shapes_include_mobius_strip():
+    """DES-007 #1 選べる図形にメビウスの帯が加わり、ドーナツと立方体も残っている。"""
+    assert shapes.SHAPES.get("mobius-strip") is shapes.mobius_strip
+    assert "torus" in shapes.SHAPES
+    assert "cube" in shapes.SHAPES
+
+
+def test_mobius_strip_normal_reverses_after_one_turn():
+    """DES-007 #5 中心線を1周すると同じ位置に戻り、面の向きが −1 倍になる。"""
+    start = shapes.mobius_strip_point(0.0, 0.0)
+    end = shapes.mobius_strip_point(2 * math.pi, 0.0)
+
+    assert _vectors_close(end.position, start.position)
+    assert _vectors_close(end.normal, tuple(-n for n in start.normal))
+    assert _vectors_close(start.normal, (0.0, 0.0, -1.0))
+
+
+def test_mobius_strip_normal_changes_continuously_along_center_line():
+    """DES-007 #6 中心線に沿って1周する間、隣り合う面の向きの内積が 0.99 より大きい。"""
+    normals = [
+        shapes.mobius_strip_point(2 * math.pi * j / 1000, 0.0).normal
+        for j in range(1001)
+    ]
+
+    for previous, current in zip(normals, normals[1:], strict=False):
+        assert _dot(previous, current) > 0.99
+
+
+def test_mobius_strip_points_lie_on_strip():
+    """DES-007 #7 帯の点は中心線の円から 1/3 以内で、面の向きは帯の幅の向きに垂直。"""
+    for point in shapes.mobius_strip():
+        x, y, z = point.position
+        distance = math.hypot(math.hypot(x, y) - 2 / 3, z)
+        u = math.atan2(y, x)
+        width_direction = (
+            math.cos(u / 2) * math.cos(u),
+            math.cos(u / 2) * math.sin(u),
+            math.sin(u / 2),
+        )
+
+        assert distance <= 1 / 3 + 1e-9, point
+        assert math.isclose(_dot(point.normal, width_direction), 0.0, abs_tol=1e-9)
+
+
+def test_mobius_strip_point_count_is_within_limit():
+    """DES-007 #8 メビウスの帯の点の数は 16000 で、DES-002 の上限 30000 以下である。"""
+    count = len(shapes.mobius_strip())
+
+    assert count == 16000
+    assert count <= 30000
+
+
+@pytest.mark.parametrize(
+    "v, position, normal",
+    [
+        pytest.param(
+            1 / 3,
+            (1.0, 0.0, 0.0),
+            (0.0, 1 / math.sqrt(37), -6 / math.sqrt(37)),
+            id="DES-007#9 v の最大値",
+        ),
+        pytest.param(
+            -1 / 3,
+            (1 / 3, 0.0, 0.0),
+            (0.0, -1 / math.sqrt(5), -2 / math.sqrt(5)),
+            id="DES-007#9 v の最小値",
+        ),
+    ],
+)
+def test_mobius_strip_point_at_strip_edges(v, position, normal):
+    """DES-007 #9 帯の幅の両端の点の位置と面の向き。"""
+    point = shapes.mobius_strip_point(0.0, v)
+
+    assert _vectors_close(point.position, position)
+    assert _vectors_close(point.normal, normal)

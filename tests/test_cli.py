@@ -193,3 +193,28 @@ def test_unknown_shape_lists_cube(capsys):
 def test_cube_name_must_match_exactly(shape_name, capsys):
     """DES-006 #4 大文字や末尾の空白を含む名前は選べない。"""
     assert "invalid choice" in _assert_rejected([shape_name], capsys)
+
+
+def test_mobius_strip_can_be_selected_by_name():
+    """DES-007 #2 図形の名前 mobius-strip でメビウスの帯を選べ、ほかは既定値になる。"""
+    assert parse_launch_options(["mobius-strip"]) == LaunchOptions(
+        shape_name="mobius-strip", width=80, height=24, fps=20, frame_count=None
+    )
+
+
+def test_unknown_shape_lists_mobius_strip(capsys):
+    """DES-007 #3 選べない名前のときの標準エラー出力に mobius-strip が含まれる。"""
+    assert "mobius-strip" in _assert_rejected(["sphere"], capsys)
+
+
+@pytest.mark.parametrize(
+    "shape_name",
+    [
+        pytest.param("mobius_strip", id="DES-007#4 下線"),
+        pytest.param("mobius", id="DES-007#4 一部だけ"),
+        pytest.param("Mobius-Strip", id="DES-007#4 大文字"),
+    ],
+)
+def test_mobius_strip_name_must_match_exactly(shape_name, capsys):
+    """DES-007 #4 下線、一部だけ、大文字の名前は選べない。"""
+    assert "invalid choice" in _assert_rejected([shape_name], capsys)
