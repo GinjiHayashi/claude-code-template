@@ -50,7 +50,7 @@ def test_torus_frame_of_single_cell():
 
 
 def test_frame_uses_only_blank_and_shade_chars():
-    """DES-001 #6 全図形・16 通りの回転角で、文字は空白か明るさの文字だけで、空白以外もある。"""
+    """DES-001 #6 全図形・16 通りの回転角で、空白と明るさの文字だけを使う。"""
     for name, points in _shape_points().items():
         for rotation in _sixteen_rotations():
             chars = set(render_frame(points, rotation, 80, 24).replace("\n", ""))
@@ -94,7 +94,7 @@ def test_normals_have_unit_length():
 
 
 def test_all_points_project_inside_screen():
-    """DES-001 #11 全図形・3つの大きさ・16 通りの回転角で、全点が画面の内側に投影される。"""
+    """DES-001 #11 全図形・3つの大きさ・16 通りの回転角で、全点が画面の内側に入る。"""
     for name, points in _shape_points().items():
         for width, height in SIZES:
             for rotation in _sixteen_rotations():
