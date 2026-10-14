@@ -169,3 +169,27 @@ def test_help_prints_usage_and_exits_successfully(capsys):
     assert "usage: spin" in output
     for option in NUMERIC_OPTIONS:
         assert option in output
+
+
+def test_cube_can_be_selected_by_name():
+    """DES-006 #2 図形の名前 cube で立方体を選べ、ほかは既定値になる。"""
+    assert parse_launch_options(["cube"]) == LaunchOptions(
+        shape_name="cube", width=80, height=24, fps=20, frame_count=None
+    )
+
+
+def test_unknown_shape_lists_cube(capsys):
+    """DES-006 #3 選べない名前を指定すると、標準エラー出力の一覧に cube が含まれる。"""
+    assert "cube" in _assert_rejected(["sphere"], capsys)
+
+
+@pytest.mark.parametrize(
+    "shape_name",
+    [
+        pytest.param("CUBE", id="DES-006#4 大文字"),
+        pytest.param("cube ", id="DES-006#4 末尾に空白"),
+    ],
+)
+def test_cube_name_must_match_exactly(shape_name, capsys):
+    """DES-006 #4 大文字や末尾の空白を含む名前は選べない。"""
+    assert "invalid choice" in _assert_rejected([shape_name], capsys)

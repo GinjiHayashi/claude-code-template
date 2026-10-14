@@ -130,3 +130,66 @@ def test_unknown_shape_name_raises_key_error():
     """DES-001 #25 選べる図形にない名前を引くと KeyError になる。"""
     with pytest.raises(KeyError):
         shapes.SHAPES["unknown"]
+
+
+AXIS_DIRECTIONS = (
+    (-1.0, 0.0, 0.0),
+    (1.0, 0.0, 0.0),
+    (0.0, -1.0, 0.0),
+    (0.0, 1.0, 0.0),
+    (0.0, 0.0, -1.0),
+    (0.0, 0.0, 1.0),
+)
+
+
+def _matching_axis_direction(normal: tuple[float, float, float]) -> int | None:
+    """normal と一致する AXIS_DIRECTIONS の添字を返す。どれとも違えば None。"""
+    for index, direction in enumerate(AXIS_DIRECTIONS):
+        if all(
+            math.isclose(n, d, abs_tol=1e-9)
+            for n, d in zip(normal, direction, strict=True)
+        ):
+            return index
+    return None
+
+
+def test_shapes_include_cube():
+    """DES-006 #1 選べる図形に立方体が加わり、ドーナツも残っている。"""
+    assert shapes.SHAPES.get("cube") is shapes.cube
+    assert "torus" in shapes.SHAPES
+
+
+def test_cube_points_lie_on_six_faces():
+    """DES-006 #5 立方体の点は6つの面の上にあり、面の向きは外向きの軸の向きである。"""
+    points = shapes.cube()
+    counts = [0] * len(AXIS_DIRECTIONS)
+    distances = []
+
+    for point in points:
+        index = _matching_axis_direction(point.normal)
+        assert index is not None, point
+        counts[index] += 1
+        axis = index // 2
+        along_normal = point.position[axis]
+        assert along_normal * point.normal[axis] > 0, point
+        distances.append(abs(along_normal))
+        others = [abs(point.position[i]) for i in range(3) if i != axis]
+        assert all(other < abs(along_normal) for other in others), point
+
+    assert counts == [3600] * 6
+    assert all(math.isclose(d, distances[0], rel_tol=1e-9) for d in distances)
+
+
+def test_cube_point_count_is_within_limit():
+    """DES-006 #6 立方体の点の数は 21600 で、DES-002 の上限 30000 以下である。"""
+    count = len(shapes.cube())
+
+    assert count == 21600
+    assert count <= 30000
+
+
+def test_cube_front_face_draws_single_shade_char():
+    """DES-006 #7 回転角 (0, 0) の立方体は、空白以外のマスがすべて * になる。"""
+    frame = render_frame(shapes.cube(), Rotation(0.0, 0.0), 80, 24)
+
+    assert set(frame) - {" ", "\n"} == {"*"}
