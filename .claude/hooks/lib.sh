@@ -6,9 +6,10 @@ TECH_MD="$ROOT/docs/project/tech.md"
 TASKS_DIR="$ROOT/docs/project/tasks"
 
 # 標準入力の JSON から編集対象のパスを取り出す。jq がなければ sed で読む。
+# 引数で JSON を渡した場合は、標準入力の代わりにそれを読む。
 read_file_path() {
   local input
-  input=$(cat)
+  input=${1-$(cat)}
   if command -v jq >/dev/null 2>&1; then
     printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty'
     return
@@ -16,6 +17,24 @@ read_file_path() {
   printf '%s' "$input" | tr -d '\n' \
     | sed -n -e 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
              -e 's/.*"notebook_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+}
+
+# JSON から tool_name を取り出す。
+tool_name_of() {
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$1" | jq -r '.tool_name // empty'
+    return
+  fi
+  printf '%s' "$1" | tr -d '\n' | sed -n 's/.*"tool_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+}
+
+# JSON から Bash のコマンドを取り出す。jq がなければ JSON 全体を返す（判定は部分一致なので足りる）。
+bash_command_of() {
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$1" | jq -r '.tool_input.command // empty'
+    return
+  fi
+  printf '%s' "$1"
 }
 
 # 絶対パスをリポジトリ直下からの相対パスにする。

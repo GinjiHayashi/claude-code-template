@@ -10,8 +10,8 @@ omitClaudeMd: true
 ## 手順
 1. `docs/guidelines/review.md` を読む。重要度、出力形式、共通観点はこのファイルに従う。
 2. `docs/guidelines/coding.md` を読む。
-3. 呼び出し側から渡された対象と、関連する REQ・DES を読む。`docs/project/architecture.md`（CODE-11）、`docs/project/glossary.md`（CODE-02・04）、`docs/project/tech.md`（CODE-26、REV-25）も読む。
-4. 共通観点（REV-18〜25）と対象別の基準で判定し、REV-15・REV-16 の形式で出力する。
+3. 呼び出し側から渡された差分ファイルと、関連する REQ・DES を読む。`docs/project/architecture.md`（CODE-11）、`docs/project/glossary.md`（CODE-02・04）を読む。`docs/project/tech.md` は「フォーマッター」（CODE-26、REV-25）と「コメントの書式」（CODE-22・27・28）の見出しだけを読む。
+4. 共通観点（REV-18〜26）と対象別の基準で判定し、REV-15・REV-16 の形式で出力する。
 
 ## 制約
 - ファイルを修正しない。指摘と修正案だけを返す。

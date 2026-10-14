@@ -5,8 +5,8 @@ description: 新しいプロジェクトの開発を始めるとき、または 
 # 開発開始
 
 ## 準備
-1. `docs/guidelines/planning.md`（PLAN-01〜07、PLAN-16・17）と `docs/guidelines/documentation.md` を読む。
-2. `docs/guidelines/templates/task.md` から TASK ファイル（タスク名「開発開始」）を作り、`status: in-progress` にする（WF-08）。
+1. この会話でまだ読んでいない（圧縮などで内容が残っていない場合を含む）ときだけ、`docs/guidelines/planning.md`（PLAN-01〜07、PLAN-16・17・21）と `docs/guidelines/documentation.md` を読む。
+2. `task.sh new kickoff 開発開始` で TASK ファイルを作り、`task.sh status` で `in-progress` にする（WF-08）。
 
 ## テンプレートの用意
 3. `docs/project/overview.md`、`docs/project/tech.md`、`docs/project/glossary.md` がなければ、`docs/guidelines/templates/` の同名ファイルをコピーする。
@@ -20,9 +20,9 @@ description: 新しいプロジェクトの開発を始めるとき、または 
 
 ## ブラッシュアップ
 9. 空欄がなくなったら、見出しをまたいで不足・矛盾・考慮漏れを探し、1つずつ指摘して質問する（PLAN-03、PLAN-06）。
-10. 決まった用語は glossary.md に、DOC-15 を満たす判断は ADR に記録する（PLAN-16、PLAN-17）。
+10. overview.md に出てくるプロジェクト固有の用語を glossary.md に登録し、定義と「コード上の名前」（英語。ローマ字は使わない）を推奨案で決める（PLAN-17、PLAN-21、DOC-04）。DOC-15 を満たす判断は ADR に記録する（PLAN-16）。
 
 ## 完了
-11. ユーザーに承認を求める（WF-04）。
-12. 承認されたら、2つのファイルの `status` を `final`、`updated` を今日の日付にし、TASK を `done` にして作業ログを書く。
+11. ユーザーに承認を求める（WF-04）。glossary.md の「コード上の名前」も承認の対象として示す。
+12. 承認されたら、3つのファイルの `status` を `final`、`updated` を今日の日付にし、TASK を `done` にして作業ログを書く。
 13. 次は `/plan-spec` で要件定義に進むと伝える。

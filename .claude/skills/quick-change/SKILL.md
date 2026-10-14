@@ -8,8 +8,8 @@ argument-hint: "<変更内容>"
 対象: `$ARGUMENTS`（変更内容の説明）
 
 ## 準備
-1. `docs/guidelines/workflow.md`（WF-12〜16）、`docs/guidelines/testing.md`、`docs/guidelines/coding.md`、`docs/guidelines/documentation.md` を読む。
-2. `docs/guidelines/templates/task.md` から TASK ファイル（タスク名は変更内容の要約）を作り、`status: in-progress` にする（WF-08）。
+1. この会話でまだ読んでいない（圧縮などで内容が残っていない場合を含む）ときだけ、`docs/guidelines/workflow.md`（WF-12〜16）、`docs/guidelines/testing.md`、`docs/guidelines/coding.md`、`docs/guidelines/documentation.md` を読む。
+2. `task.sh new` で TASK ファイル（タスク名は変更内容の要約）を作り、`task.sh status` で `in-progress` にする（WF-08）。
 
 ## 探索と判定
 3. 変更箇所と影響範囲を Explore サブエージェントで調べる（WF-03）。
@@ -20,12 +20,12 @@ argument-hint: "<変更内容>"
 6. `/review-loop` Skill を使い、種別 `plan`、対象を変更した資料としてレビューする。合格したら「完了」へ進む。
 
 ## コードの変更
-7. 不具合の修正なら、不具合を再現するテストを書き、tech.md の「テスト（全件）」で、追加したテストだけがアサーション失敗で失敗し、既存のテストは成功することを確認する（失敗理由の基準は TEST-03）。テストファイルだけをコミットし、TASK の `frozen_tests` にそのパスを、作業ログに凍結コミットのハッシュを書いて凍結する（TEST-04）。
+7. 不具合の修正なら、不具合を再現するテストを書き（テスト名と説明は TEST-09、DES の番号がなければ説明に再現する不具合を書く）、tech.md の「テスト（全件）」で、追加したテストだけがアサーション失敗で失敗し、既存のテストは成功することを確認する（失敗理由の基準は TEST-03）。テストファイルだけをコミットし、`task.sh freeze` で TASK の `frozen_tests` にそのパスを、`task.sh log` で作業ログに凍結コミットのハッシュを書いて凍結する（TEST-04）。
 8. 修正する。テストファイルは変更しない（TEST-04）。
 9. tech.md のテスト、リント、フォーマット、ビルドのコマンドを実行し、すべて成功させる（TEST-06、REV-14）。
 10. 変更中に WF-14 の条件を満たさなくなったら、止めて通常のフローに切り替える（WF-16）。
 11. `/review-loop` Skill を使い、種別 `code`、対象を変更前のコミットからの git diff（テストファイルを含む）としてレビューする。
-12. 振る舞いが DES の記述と変わった場合は DES を更新し、`/review-loop` の種別 `plan` でレビューする。
+12. 振る舞いが DES の記述と変わった場合は DES と test-items.md を更新し、`/review-loop` の種別 `plan` でレビューする。
 
 ## 完了
 13. 変更内容、レビュー結果、人間確認が必要な点をユーザーに示して確認を求める（WF-12）。
