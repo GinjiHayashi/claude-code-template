@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 updated: 2026-10-14
 related: [REQ-001, DES-002]
 frozen_tests:     # 凍結したテストファイル（リポジトリ直下からのパス）。凍結時に追記する（TEST-04）
@@ -12,17 +12,18 @@ frozen_tests:     # 凍結したテストファイル（リポジトリ直下か
 ## 現在のフェーズ
 > 探索 / 計画 / 実装（Red / Green / Refactor）/ レビュー のどこにいるか。
 
-レビュー（人間確認待ち）
+完了
 
 ## 完了したこと
 
 - DES-002 の実装（cli.py、__main__.py、.gitignore、tests/test_cli.py）。全834件成功
 - test-reviewer・code-reviewer で合格
+- 人間確認（2行の表示で1人あたりと幹事の額を取り違えずに読み上げられる）をユーザーが確認
 
 ## 次の一手
 > 再開したセッションが最初に行うこと。1つの具体的な行動で書く。
 
-ユーザーに DES-002 の人間確認の結果を聞き、問題なければ TASK を done にする
+`/plan-spec REQ-002` で REQ-002 の設計を始める
 
 ## 未解決事項
 
@@ -37,3 +38,4 @@ frozen_tests:     # 凍結したテストファイル（リポジトリ直下か
 - 2026-10-14 レビュー（テスト）: test-reviewer ラウンド2 合格（P0=0 P1=0 P2=2、保留0）。P2（parametrize の ids、サブプロセスの前提の明記）は検証内容に影響しないため見送り。tests/test_cli.py を凍結（コミット 77567ec）
 - 2026-10-14 実装（Green/Refactor）: cli.py・__main__.py・.gitignore を実装。834件成功、ruff format・check 成功。Refactor で argv の None 処理を argparse に任せて簡略化し、方式の定数を非公開名に変更。全テスト成功を再確認
 - 2026-10-14 レビュー（コード）: code-reviewer ラウンド1 合格（P0=0 P1=0 P2=1、保留0）。P2（main が args.method を参照しない）は REQ-002 の実装で方式の分岐を入れる際に解消するため見送り。人間確認をユーザーに依頼
+- 2026-10-14 レビュー（人間確認）: ユーザーが `uv run python -m warikan 10000 3` の表示を確認し問題なし。TASK-005 を完了
