@@ -68,3 +68,50 @@ def test_des002_7_module_entry_point():
     assert completed.returncode == 0
     assert completed.stdout == "1人あたり 3,300円\n幹事 3,400円\n"
     assert completed.stderr == ""
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected_out"),
+    [
+        pytest.param(
+            ["10000", "3", "--method", "collect-extra"],
+            "1人あたり 3,400円\n余り 200円\n",
+            id="12_typical",
+        ),
+        pytest.param(
+            ["9000", "3", "--method", "collect-extra"],
+            "1人あたり 3,000円\n余り 0円\n",
+            id="13_divisible",
+        ),
+        pytest.param(
+            ["10050", "1", "--method", "collect-extra"],
+            "1人あたり 10,100円\n余り 50円\n",
+            id="13_single_person",
+        ),
+        pytest.param(
+            ["1000000", "1", "--method", "collect-extra"],
+            "1人あたり 1,000,000円\n余り 0円\n",
+            id="14_comma_two",
+        ),
+        pytest.param(
+            ["1", "1", "--method", "collect-extra"],
+            "1人あたり 100円\n余り 99円\n",
+            id="14_minimum",
+        ),
+        pytest.param(
+            ["1000000", "100", "--method", "collect-extra"],
+            "1人あたり 10,000円\n余り 0円\n",
+            id="14_max_people",
+        ),
+        pytest.param(
+            ["--method", "collect-extra", "10000", "3"],
+            "1人あたり 3,400円\n余り 200円\n",
+            id="15_option_first",
+        ),
+    ],
+)
+def test_des003_12to15_collect_extra_output(capsys, argv, expected_out):
+    exit_code = main(argv)
+
+    assert exit_code == 0
+    assert capsys.readouterr().out == expected_out
