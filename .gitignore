@@ -1,2 +1,9 @@
 # レビュー用の差分ファイル（/review-loop が作る。REV-12）
 .claude/review/
+
+# Python とツールが生成するもの
+.venv/
+__pycache__/
+.coverage
+.pytest_cache/
+.ruff_cache/
