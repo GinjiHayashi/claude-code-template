@@ -5,7 +5,7 @@
 - リポジトリ構成と開発の進め方は `README.md` を読む。
 
 ## セッション開始時
-- SessionStart hook が進行中の TASK を表示する。表示された TASK の「次の一手」から再開する。
+- SessionStart hook が進行中の TASK を表示する。表示された TASK の「次の一手」にある Skill を読み込み、その手順から再開する（DOC-21）。質問の途中なら PLAN-27 に従う。
 - 該当ファイルがない場合は、ユーザーに次の作業を確認する。
 
 ## タスクの進め方と記録
@@ -29,4 +29,4 @@ IMPORTANT: 以下の禁止事項は例外なく守る。
 
 ## やり取り
 - 文体は「である調」とする。
-- 質問の仕方は PLAN-01・PLAN-19（`docs/guidelines/planning.md`）に従う。
+- 質問の仕方は PLAN-01・PLAN-19・PLAN-26（`docs/guidelines/planning.md`）に従う。質問が2問以上になるときは、最初に質問の一覧（総数と各質問で聞くこと）を示してから1問ずつ聞く。

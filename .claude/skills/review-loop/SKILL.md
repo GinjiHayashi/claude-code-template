@@ -13,7 +13,7 @@ argument-hint: "<plan|test|code> <対象>"
 3. 種別が `code` なら tech.md のテスト・リント・ビルドが成功していること、`test` なら Red（TEST-03）を確認済みであることを確かめる（REV-14）。
 
 ## ラウンド（最大3回、REV-05・REV-07）
-4. `test` と `code` では、差分を `.claude/review/<TASK-ID>-r<ラウンド番号>.diff` に保存する（REV-12）。`test` はテストファイルの `git diff HEAD`（新しいファイルは `git add -N` してから含める）、`code` は凍結コミット（軽微な変更では変更前のコミット）からの `git diff` とする。
+4. `test` と `code`、既存の資料を改訂した `plan` では、差分を `.claude/review/<TASK-ID>-r<ラウンド番号>.diff` に保存する（REV-12）。`test` はテストファイルの `git diff HEAD`（新しいファイルは `git add -N` してから含める）、`code` は凍結コミット（軽微な変更、削除だけの DES、プロジェクト全体の点検では変更前のコミット）からの `git diff` とする。`plan` でも既存の資料を改訂した場合は、改訂した資料の `git diff HEAD` を保存する。
 5. レビュアーのサブエージェントに、対象のファイルのパス、差分ファイルのパス、関連する REQ・DES の ID、ラウンド番号、`code` なら TASK の `frozen_tests` の一覧だけを渡す。作成の経緯や前ラウンドの議論は渡さない（REV-12）。
 6. 返ってきた1行目の件数を読む。ルール ID のない P0・P1、存在しない ID の指摘は無効として除く（REV-04）。
 7. 合格（REV-06）なら終了する。

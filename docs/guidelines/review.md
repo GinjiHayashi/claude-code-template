@@ -33,7 +33,7 @@ related: []
 | ID | ルール |
 |---|---|
 | REV-11 | レビューは、対象を作成・修正したエージェントとは別のサブエージェントが行う（計画書: plan-reviewer、テスト: test-reviewer、実装: code-reviewer） |
-| REV-12 | 呼び出し側はレビュアーに、対象（ファイルのパスと差分ファイルのパス）、関連する REQ・DES の ID、ラウンド番号、`code` なら TASK の `frozen_tests` だけを渡す。差分は `test` と `code` のどちらでも `.claude/review/<TASK-ID>-r<ラウンド番号>.diff` に保存して渡す（レビュアーは git を実行できないため）。作成時の経緯や前ラウンドの議論は渡さない |
+| REV-12 | 呼び出し側はレビュアーに、対象（ファイルのパスと差分ファイルのパス）、関連する REQ・DES の ID、ラウンド番号、`code` なら TASK の `frozen_tests` だけを渡す。差分は `test` と `code`、および既存の資料を改訂した `plan` で、`.claude/review/<TASK-ID>-r<ラウンド番号>.diff` に保存して渡す（レビュアーは git を実行できないため）。変更要求の計画（WF-18）の `plan` では、影響一覧を書いた TASK も対象に含める。作成時の経緯や前ラウンドの議論は渡さない |
 | REV-13 | レビュアーはファイルを修正しない。修正は呼び出し側が行う |
 | REV-14 | 機械的な検証はレビューの前に済ませる。コードのレビューはテスト・リント・ビルドがすべて成功した状態で、テストのレビューは Red（TEST-03）を確認した状態で依頼する |
 
@@ -57,7 +57,7 @@ related: []
 | REV-23 | 開発ルール | 対象に該当する guidelines のルールに違反していない |
 | REV-24 | 凍結テスト | code の場合、渡された `frozen_tests` のファイルに差分がない（TEST-04）。差分があれば P0 とする |
 | REV-25 | 書式 | フォーマッターが決める項目（CODE-26）は判定の対象外とし、指摘しない。tech.md のフォーマッターが「なし」の場合だけ、空行の個数を CODE-25 で判定する |
-| REV-26 | 退行 | 変更前に成功していた既存のテスト、または既存の受け入れ基準を満たしていた入力が、変更後に失敗するか結果が変わることがない。DES の「既存の振る舞いへの影響」（PLAN-20）で変わると決めた振る舞いは除く。退行は P0 とする（REV-01 (5)） |
+| REV-26 | 退行 | 変更前に成功していた既存のテスト、または既存の受け入れ基準を満たしていた入力が、変更後に失敗するか結果が変わることがない。DES の「既存の振る舞いへの影響」（PLAN-20）で変わる・なくなると決めた振る舞いは除く。退行は P0 とする（REV-01 (5)） |
 
 ## 対象別の判定基準
 
@@ -65,6 +65,6 @@ related: []
 
 | レビュアー | 読む基準 | 読む資料（project/） |
 |---|---|---|
-| plan-reviewer | `planning.md`（PLAN-）、`documentation.md`（DOC-） | `glossary.md`。対象が REQ なら `overview.md`、DES なら `architecture.md` と `test-items.md` の対象 DES の見出し |
+| plan-reviewer | `planning.md`（PLAN-）、`documentation.md`（DOC-） | `glossary.md`。対象が REQ なら `overview.md`、変更要求の TASK なら影響一覧が挙げる REQ・DES・テスト、DES なら `architecture.md` と `test-items.md` の対象 DES の見出し |
 | test-reviewer | `testing.md`（TEST-） | `test-items.md` の対象 DES の見出し、対象 DES の「既存の振る舞いへの影響」 |
 | code-reviewer | `coding.md`（CODE-）、対応する DES | `architecture.md`、`glossary.md`、`tech.md` の「フォーマッター」と「コメントの書式」 |

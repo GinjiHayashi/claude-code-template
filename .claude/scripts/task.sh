@@ -6,6 +6,7 @@
 #   task.sh phase <TASK-ID> <現在のフェーズ> <次の一手>                    2つのセクションを上書きする
 #   task.sh log <TASK-ID> <フェーズ> <行ったことと結果>                    作業ログに1行追記する（DOC-11）
 #   task.sh freeze <TASK-ID> <テストファイルのパス>                         frozen_tests に追記する（TEST-04）
+#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID を追記する（WF-20）
 set -eu
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
@@ -115,7 +116,21 @@ cmd_freeze() {
   '
 }
 
-[ $# -ge 1 ] || fail "サブコマンド（new / status / phase / log / freeze）を指定する"
+cmd_relate() {
+  [ $# -eq 2 ] || fail "relate <TASK-ID> <ID>"
+  case "$2" in REQ-[0-9]*|DES-[0-9]*) ;; *) fail "ID は REQ-xxx か DES-xxx: $2" ;; esac
+  rewrite "$(task_file "$1")" -v id="$2" '
+    NR == 1 && $0 == "---" { inside = 1 }
+    inside && NR > 1 && $0 == "---" { inside = 0 }
+    inside && /^related:/ && index($0, id) == 0 {
+      if ($0 ~ /\[[ \t]*\]/) sub(/\[[ \t]*\]/, "[" id "]")
+      else sub(/\]/, ", " id "]")
+    }
+    { print }
+  '
+}
+
+[ $# -ge 1 ] || fail "サブコマンド（new / status / phase / log / freeze / relate）を指定する"
 sub="$1"; shift
 case "$sub" in
   new) cmd_new "$@" ;;
@@ -123,5 +138,6 @@ case "$sub" in
   phase) cmd_phase "$@" ;;
   log) cmd_log "$@" ;;
   freeze) cmd_freeze "$@" ;;
+  relate) cmd_relate "$@" ;;
   *) fail "不明なサブコマンド: $sub" ;;
 esac
