@@ -91,11 +91,11 @@ check_index() {
 # RF-25: 定義されていないルール ID と、存在しない資料 ID の参照。
 check_references() {
   local defined id target
-  defined=$(grep -hoE '^\| (WF|PLAN|TEST|REV|DOC|CODE|RF)-[0-9]+ \|' "$DOCS_DIR"/guidelines/*.md | tr -d '| ' | sort -u)
+  defined=$(grep -hoE '^\| (WF|PLAN|TEST|REV|DOC|CODE|RF|GIT)-[0-9]+ \|' "$DOCS_DIR"/guidelines/*.md | tr -d '| ' | sort -u)
   for target in "$ROOT/CLAUDE.md" "$ROOT/README.md" "$DOCS_DIR" "$ROOT/.claude/skills" "$ROOT/.claude/agents" "$ROOT/.claude/hooks" "$ROOT/.claude/scripts"; do
     [ -e "$target" ] || continue
-    grep -rnoE '(^|[^A-Za-z])(WF|PLAN|TEST|REV|DOC|CODE|RF)-[0-9]+' "$target" 2>/dev/null | while IFS= read -r reference; do
-      id=$(printf '%s' "$reference" | grep -oE '(WF|PLAN|TEST|REV|DOC|CODE|RF)-[0-9]+$')
+    grep -rnoE '(^|[^A-Za-z])(WF|PLAN|TEST|REV|DOC|CODE|RF|GIT)-[0-9]+' "$target" 2>/dev/null | while IFS= read -r reference; do
+      id=$(printf '%s' "$reference" | grep -oE '(WF|PLAN|TEST|REV|DOC|CODE|RF|GIT)-[0-9]+$')
       printf '%s\n' "$defined" | grep -qx "$id" \
         || finding RF-25 DOC-01 "$(to_relative "${reference%%:*}"):$(printf '%s' "$reference" | cut -d: -f2)" "ルール $id が guidelines に定義されていない" "正しいルール ID に直す"
     done

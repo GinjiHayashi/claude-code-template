@@ -12,6 +12,7 @@
 - 作業は `docs/guidelines/workflow.md` のフェーズ（探索→計画→実装→レビュー）に従う。
 - TASK ファイルの作成と、状態・現在のフェーズ・次の一手・作業ログ・凍結の更新は `.claude/scripts/task.sh`（使い方はスクリプト冒頭）で行う。「完了したこと」「未解決事項」は Edit で更新する。
 - TASK ファイルの更新規則は DOC-10〜13（`docs/guidelines/documentation.md`）に従う。
+- ブランチ・コミット・プッシュ・PR・承認の依頼（承認パケット）は `docs/guidelines/git.md` に従う。作業ブランチの作成と下書き PR は `.claude/scripts/branch.sh` で行う。
 
 ## 作業前に読む資料
 - 作業の種類に応じて、`docs/README.md` の「いつ読むか」に載っている資料を読む。

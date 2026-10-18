@@ -37,6 +37,18 @@ bash_command_of() {
   printf '%s' "$1"
 }
 
+# JSON からコマンドを実行するディレクトリ（cwd）を取り出す。取れなければ ROOT を返す。
+cwd_of() {
+  local cwd=""
+  if command -v jq >/dev/null 2>&1; then
+    cwd=$(printf '%s' "$1" | jq -r '.cwd // empty')
+  else
+    cwd=$(printf '%s' "$1" | tr -d '\n' | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  fi
+  [ -d "$cwd" ] || cwd="$ROOT"
+  printf '%s' "$cwd"
+}
+
 # 絶対パスをリポジトリ直下からの相対パスにする。
 to_relative() {
   local path="$1"

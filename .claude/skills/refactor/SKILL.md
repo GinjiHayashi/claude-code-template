@@ -9,8 +9,8 @@ allowed-tools: Bash(bash .claude/scripts/audit.sh)
 対象: `$ARGUMENTS`（空ならリポジトリ全体）
 
 ## 準備
-1. この会話でまだ読んでいない（圧縮などで内容が残っていない場合を含む）ときだけ、`docs/guidelines/refactoring.md`、`docs/guidelines/review.md`、`docs/guidelines/workflow.md`（WF-08・12・18・24）を読む。
-2. `task.sh new refactor リファクタリング` で TASK ファイルを作り、`task.sh status` で `in-progress` にする（WF-08）。`git rev-parse HEAD` で変更前のコミットを確かめ、`task.sh log` で作業ログに書く。
+1. この会話でまだ読んでいない（圧縮などで内容が残っていない場合を含む）ときだけ、`docs/guidelines/refactoring.md`、`docs/guidelines/review.md`、`docs/guidelines/workflow.md`（WF-08・12・18・24）、`docs/guidelines/git.md` を読む。
+2. `bash .claude/scripts/branch.sh start feature/refactor-<今日の日付 YYYYMMDD>` で作業ブランチに入る（GIT-03・04）。`task.sh new refactor リファクタリング` で TASK ファイルを作り、`task.sh status` で `in-progress` にする（WF-08）。`git rev-parse HEAD` で変更前のコミットを確かめ、`task.sh log` で作業ログに書き、コミットする（GIT-10 (1)）。
 
 ## 診断
 3. tech.md のテスト、リント、ビルドのコマンドを実行する（RF-28）。失敗したら、その結果を P0 の指摘にする。このとき自動修正は行わない（RF-43）。
@@ -20,15 +20,15 @@ allowed-tools: Bash(bash .claude/scripts/audit.sh)
 7. 各指摘を RF-40 で「自動修正」「変更要求の候補」「任意」に分類する。分類付きの一覧と修正計画（直す順と、新しく足すファイル。RF-41）を TASK の「完了したこと」に書く。
 
 ## 承認
-8. 一覧と修正計画を示し、承認を求める（RF-42）。任意（P2）の指摘は、直すものを選んでもらう。質問が2問以上になる場合は PLAN-26 に従う。
+8. 一覧と修正計画を承認パケット（GIT-30。差分リンクは省く）の形で示し、承認を求める（RF-42）。任意（P2）の指摘は、直すものを選んでもらう。質問が2問以上になる場合は PLAN-26 に従う。
 9. 承認されなかった指摘は直さず、TASK の「未解決事項」に書く。
 
 ## 修正
 10. 自動修正の指摘を1件ずつ直す。ファイルは Edit / Write で直し、テストファイルは変更しない。1件直すごとに tech.md の「テスト（全件）」を実行し、失敗したらその修正を戻して変更要求の候補に移す（RF-43）。
-11. すべて直したら、テスト、リント、フォーマット、ビルドのコマンドを実行し、すべて成功させる（REV-14）。
-12. `/review-loop` Skill を使ってレビューする（RF-44）。コードを直した場合は種別 `code`、対象を変更前のコミットからの git diff とする。資料を直した場合は種別 `plan`、対象を直した資料とする。
+11. すべて直したら、テスト、リント、フォーマット、ビルドのコマンドを実行し、すべて成功させ、コミットする（REV-14、GIT-10 (4)）。
+12. `/review-loop` Skill を使ってレビューする（RF-44）。コードを直した場合は種別 `code`、対象を変更前のコミットからの git diff とする。資料を直した場合は種別 `plan`、対象を直した資料とする。終わったらコミットする（GIT-10 (5)）。
 
 ## 完了
 13. 変更要求の候補を TASK の「未解決事項」に一覧で書く（RF-45）。
-14. 直した内容、レビュー結果、変更要求の候補を示して確認を求める（WF-12）。変更要求の候補を直す場合は、1件ずつ `/plan-spec change <変更内容>` で進めると伝える。
-15. TASK を `done` にし、作業ログを書く。
+14. `bash .claude/scripts/branch.sh pr` でプッシュと下書き PR の作成を行い、PR 本文を最新にして下書きを解除する（GIT-20〜22）。直した内容、レビュー結果、変更要求の候補を承認パケット（GIT-30。差分リンクは変更前のコミットからの比較）で示して確認を求める（WF-12）。変更要求の候補を直す場合は、1件ずつ `/plan-spec change <変更内容>` で進めると伝える。
+15. TASK を `done` にし、作業ログを書き、コミット・プッシュして PR をマージする（GIT-10 (6)、GIT-23）。

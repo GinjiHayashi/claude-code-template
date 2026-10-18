@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # タスク記録（docs/project/tasks/TASK-xxx-*.md）を作成・更新する。更新規則は DOC-10〜13、WF-08・09。
 # 使い方:
-#   task.sh new <ファイル名（英語のケバブケース）> <タスク名> [関連ID ...]   新しい TASK を作り、パスを出力する
+#   task.sh new <ファイル名（英語のケバブケース）> <タスク名> [関連ID ...]   新しい TASK を作り、パスを出力する（番号は全ブランチの最大＋1）
 #   task.sh status <TASK-ID> <todo|in-progress|done|paused>               フロントマターの status を変える
 #   task.sh phase <TASK-ID> <現在のフェーズ> <次の一手>                    2つのセクションを上書きする
 #   task.sh log <TASK-ID> <フェーズ> <行ったことと結果>                    作業ログに1行追記する（DOC-11）
@@ -49,6 +49,17 @@ replace_section() {
   '
 }
 
+# 作業ツリーと、手元・リモートのすべてのブランチにある TASK のファイル名を1行1件で返す。
+# ブランチごとに TASK を作るため、他のブランチの番号と重ならないようにする（GIT-04、GIT-61）。
+task_names() {
+  local ref
+  ls "$TASKS_DIR" 2>/dev/null || true
+  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  git -C "$ROOT" for-each-ref --format='%(refname)' refs/heads refs/remotes | while IFS= read -r ref; do
+    git -C "$ROOT" ls-tree --name-only "$ref" docs/project/tasks/ 2>/dev/null | sed 's|.*/||'
+  done
+}
+
 cmd_new() {
   [ $# -ge 2 ] || fail "new <ファイル名> <タスク名> [関連ID ...]"
   local name="$1" title="$2"; shift 2
@@ -56,7 +67,7 @@ cmd_new() {
   [ -f "$TEMPLATE" ] || fail "テンプレート $TEMPLATE がない"
   mkdir -p "$TASKS_DIR"
   local last next related file
-  last=$(ls "$TASKS_DIR" 2>/dev/null | sed -n 's/^TASK-\([0-9][0-9]*\)-.*\.md$/\1/p' | sort -n | tail -n 1)
+  last=$(task_names | sed -n 's/^TASK-\([0-9][0-9]*\)-.*\.md$/\1/p' | sort -n | tail -n 1)
   next=$(printf '%03d' $(( 10#${last:-0} + 1 )))
   related=$(printf '%s, ' "$@"); related="[${related%, }]"
   [ $# -gt 0 ] || related="[]"
