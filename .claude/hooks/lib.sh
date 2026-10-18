@@ -37,6 +37,18 @@ bash_command_of() {
   printf '%s' "$1"
 }
 
+# JSON からコマンドを実行するディレクトリ（cwd）を取り出す。取れなければ ROOT を返す。
+cwd_of() {
+  local cwd=""
+  if command -v jq >/dev/null 2>&1; then
+    cwd=$(printf '%s' "$1" | jq -r '.cwd // empty')
+  else
+    cwd=$(printf '%s' "$1" | tr -d '\n' | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  fi
+  [ -d "$cwd" ] || cwd="$ROOT"
+  printf '%s' "$cwd"
+}
+
 # 絶対パスをリポジトリ直下からの相対パスにする。
 to_relative() {
   local path="$1"
@@ -44,14 +56,20 @@ to_relative() {
   printf '%s' "${path#./}"
 }
 
-# tech.md の「開発コマンド」表から、指定した操作のコマンドを返す。未記入・なしは空。
-tech_command() {
-  local operation="$1" value
+# tech.md の「開発コマンド」表から、指定した操作の欄をそのまま返す（バッククォートは除く）。
+tech_value() {
+  local operation="$1"
   [ -f "$TECH_MD" ] || return 0
-  value=$(awk -F'|' -v op="$operation" '
+  awk -F'|' -v op="$operation" '
     { name = $2; gsub(/^[ \t]+|[ \t]+$/, "", name) }
     name == op { cmd = $3; gsub(/^[ \t]+|[ \t]+$/, "", cmd); gsub(/`/, "", cmd); print cmd; exit }
-  ' "$TECH_MD")
+  ' "$TECH_MD"
+}
+
+# tech.md の「開発コマンド」表から、指定した操作のコマンドを返す。未記入・なしは空。
+tech_command() {
+  local value
+  value=$(tech_value "$1")
   case "$value" in
     ""|"なし"|"（未記入）"*) return 0 ;;
   esac

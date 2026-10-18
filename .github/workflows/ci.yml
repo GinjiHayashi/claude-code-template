@@ -1,0 +1,33 @@
+# tech.md の開発コマンドを .claude/scripts/ci.sh で実行する。規則は docs/guidelines/git.md（GIT-24）。
+name: ci
+
+on:
+  pull_request:
+    # ready_for_review は既定の契機に入っていないため明記する
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    # 下書き PR では動かさない。凍結コミット（TEST-04）は意図的にテストが失敗するため
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # --- 言語の実行環境の準備（ここから）---
+      # /kickoff で tech.md の「言語・バージョン」から書く（GIT-24）。準備が要らなければ「不要」と書く。
+      # （未記入）
+      # --- 言語の実行環境の準備（ここまで）---
+
+      - name: 開発コマンドの実行
+        run: bash .claude/scripts/ci.sh

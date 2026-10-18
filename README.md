@@ -22,15 +22,28 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 | 中断した作業を再開する | `claude` を起動するだけ | 2.6 |
 | 進捗・次の作業・残作業を確かめる | `/progress` | 2.7 |
 | コード全体を整理し、資料どうしの齟齬を直す | `/refactor` | 2.8 |
+| リリースする（develop を main に入れる） | `/release` | 2.9 |
+| リリース済みの本番の不具合を急いで直す | `/quick-change hotfix <変更内容>` | 2.10 |
 
 小さな変更かどうか迷ったら `/quick-change` から始めて構いません。条件（2.4）を満たさないと分かった時点で、Claude が変更要求に切り替えます（WF-16）。
 
 ### 2.1 共通の準備
 
 1. このテンプレートの中身を、開発するリポジトリの直下にコピーします（`.claude/`、`docs/`、`CLAUDE.md`、`.mcp.json`、`.gitignore`）。既存のリポジトリに入れる場合は、同名のファイルを上書きしないよう注意します。
-2. git リポジトリにします（`git init`）。テストの凍結やレビューの差分は git のコミットを使います。
-3. bash が使えることを確認します（Windows では Git Bash か WSL）。hooks と `task.sh` に必要です。GitHub を使う場合は `gh` CLI も用意します。
-4. `claude` を**リポジトリの直下で**起動します。サブディレクトリで起動すると hooks が動きません（4.10）。初回は Context7（MCP サーバー）の使用を承認します。
+2. git リポジトリにし、`main` と `develop` を用意します（4.12）。テストの凍結、レビューの差分、承認用の差分リンクは git のコミットを使います。Claude は `main` と `develop` に直接コミットできない（hook が止める）ため、最初のコミットだけは人間が行います。
+   ```bash
+   git init -b main
+   git add -A && git commit -m "chore: テンプレートを導入"
+   git switch -c develop
+   ```
+3. GitHub を使う場合は、`gh` CLI を用意してリポジトリを作り、両方のブランチをプッシュして、既定ブランチを `develop` にします。リポジトリの設定で、マージ方式を「Create a merge commit」だけにし、マージ後のブランチの自動削除を有効にします。ルールセットが使えるプラン（公開リポジトリ、または Pro / Team 以上）なら、`main` と `develop` に「PR を必須」「強制プッシュの禁止」「削除の禁止」を設定し、CI を一度動かした後で、必須のステータスチェックに `ci` を加えます。CI（`.github/workflows/ci.yml`）は Actions が有効なら追加の設定なしで動きます（4.12）。
+   ```bash
+   gh repo create <名前> --private --source . --remote origin
+   git push -u origin main develop
+   gh repo edit --default-branch develop --enable-merge-commit --enable-squash-merge=false --enable-rebase-merge=false --delete-branch-on-merge
+   ```
+4. bash が使えることを確認します（Windows では Git Bash か WSL）。hooks と `.claude/scripts/` に必要です。
+5. `claude` を**リポジトリの直下で**、`develop` にいる状態で起動します。サブディレクトリで起動すると hooks が動きません（4.10）。初回は Context7（MCP サーバー）の使用を承認します。
 
 ### 2.2 新しいプロジェクトを始める
 
@@ -133,6 +146,31 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 
 実行するのは人間の指示があったときだけです。全要件の実装が終わったとき、変更要求の実装が終わったとき、前回の点検の後に実装のタスクが5件終わったときに、Claude が実行を提案します（WF-24）。
 
+### 2.9 リリースする
+
+```text
+/release [版番号]
+```
+
+全要件の実装が終わったとき（または任意の時点で指示したとき）に、`develop` の内容を `main` に入れます（GIT-50〜52）。
+
+1. `/release` を実行します。Claude が、進行中のタスクや未マージの作業ブランチがないこと、テスト・リント・ビルドが通ることを確かめます。
+2. Claude が版番号を決めます。初回は `v1.0.0`、2回目以降はコミットの種類（GIT-12）から、互換性を壊す変更があればメジャー、機能の追加があればマイナー、それ以外はパッチを上げます。
+3. `develop` → `main` の PR と承認パケットが示されるので、**承認**します。
+4. Claude がマージし、タグを付けてリリースノートを作ります。
+
+### 2.10 リリース済みの本番の不具合を急いで直す（hotfix）
+
+```text
+/quick-change hotfix <変更内容>
+```
+
+リリース済みの `main` に緊急の修正が必要で、`develop` に未リリースの変更がある場合だけ使います（GIT-60）。それ以外は 2.4 の通常の手順で直します。
+
+1. Claude が最新のタグから `hotfix/v<次のパッチ版>` を作り、2.4 と同じ手順（再現テスト → 凍結 → 修正 → レビュー）で直します。
+2. 承認パケットで**確認**します。
+3. Claude が `main` にマージしてタグとリリースノートを作り、同じ修正を `develop` にも入れます（GIT-61）。
+
 ## 3. フォルダ・ファイル構成
 
 本 README は、リポジトリ全体の地図と開発の進め方の正本です。docs 内の資料の一覧は [`docs/README.md`](docs/README.md) を正本にします。
@@ -143,12 +181,15 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 ├── CLAUDE.md                  # Claude が毎セッション読む指示。落とし穴と参照先ポインタのみ
 ├── .mcp.json                  # 共有する MCP サーバー。Context7（ライブラリの最新ドキュメント）のみ
 ├── .gitignore                 # レビュー用の差分ファイル（.claude/review/）を除外
+├── .github/
+│   ├── pull_request_template.md  # PR 本文の形（GIT-21）
+│   └── workflows/ci.yml       # CI。下書きでない PR と main・develop へのプッシュで ci.sh を実行（GIT-24）
 ├── .claude/
 │   ├── settings.json          # 権限、hooks、応答言語（日本語）などの共有設定
-│   ├── hooks/                 # hook のスクリプト。session-start / freeze-guard / format と共通関数 lib.sh
-│   ├── scripts/               # task.sh（タスク記録の作成・更新）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定）。後の2つは読み取りのみ
+│   ├── hooks/                 # hook のスクリプト。session-start / freeze-guard / branch-guard / format と共通関数 lib.sh
+│   ├── scripts/               # task.sh（タスク記録の作成・更新）、branch.sh（作業ブランチ・下書き PR・差分リンク）、ci.sh（開発コマンドを順に実行する CI の確認）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定）。後の2つは読み取りのみ
 │   ├── agents/                # サブエージェント定義。plan-reviewer / test-reviewer / code-reviewer、全体点検の code-auditor / docs-auditor（探索は組み込みの Explore）
-│   └── skills/                # 各フェーズの手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor
+│   └── skills/                # 各フェーズの手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor /release
 └── docs/
     ├── README.md              # docs 内の固定資料とフォルダの索引。「いつ読むか」の対応表
     ├── guidelines/            # 開発ルール。全プロジェクト共通
@@ -159,6 +200,7 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
     │   ├── documentation.md   # ドキュメント運用
     │   ├── coding.md          # コーディング原則
     │   ├── refactoring.md     # プロジェクト全体の点検（リファクタリング）
+    │   ├── git.md             # ブランチ、コミット、PR、承認パケット、リリース、hotfix
     │   └── templates/         # 各資料のテンプレート（project/ の資料と同名。フォルダ内の資料は単数形: requirement.md など）
     └── project/               # このプロジェクト固有の資料
         ├── overview.md        # 概要（開発開始時に人間が記入）
@@ -184,6 +226,7 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 | ドキュメント運用 | SSoT、1ファイル1責務、更新方式、メタ情報、索引の更新ルール |
 | コーディング原則 | 言語に依存しない設計原則（判定可能なものに限る） |
 | リファクタリング | プロジェクト全体の点検の観点（コードの横断的な問題、資料どうし・資料とコードの齟齬）、修正の分類（自動修正 / 変更要求の候補 / 任意） |
+| Git の運用 | ブランチの種類と単位、コミットの時点とメッセージ、プッシュと PR、承認パケット、リリース、hotfix |
 | `templates/` | 各資料のテンプレート（要件テンプレートを含む） |
 
 ファイル名は英語のケバブケースにします。
@@ -254,8 +297,11 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 
 | 人間の作業 | タイミング |
 |---|---|
-| 承認 | 開発開始の完了時、要件一覧の完了時、変更要求の計画の完了時、各要件の設計の完了時、要件・設計を戻すとき |
+| 承認 | 開発開始の完了時、要件一覧の完了時、変更要求の計画の完了時、各要件の設計の完了時、要件・設計を戻すとき、リリースの前 |
 | 確認 | 設計の人間確認の項目、レビューで残った指摘・保留した指摘、軽微な変更の完了時 |
+| PR のマージの許可 | 作業ブランチの範囲の最後の承認・確認の後に、Claude が `gh pr merge` を実行するときの確認プロンプト |
+
+承認と確認の依頼は「承認パケット」で示されます（GIT-30）。15行以内の要約（判断してほしいこと、要点、重点確認箇所、検証結果、人間確認の項目）と、その承認の範囲だけの GitHub の差分リンク（テストと実装は別のリンク）です。差分の行に GitHub でコメントすると、Claude が返答の後に読んで指摘として扱います。承認そのものはチャットで答えます。
 
 要件と設計の判断は Claude が推奨案で決め、各 REQ・DES の「判断」セクションに選択肢と理由を残します。途中で質問するのは、目的や受け入れ基準が変わる判断、後から戻せない判断、資料どうしの矛盾に限ります（PLAN-18・19）。
 
@@ -317,12 +363,13 @@ guidelines の各ルールには ID（例: `TEST-03`）を振ります。レビ�
 
 ### 4.10 hooks
 
-`.claude/settings.json` に3つの hook を設定しています。スクリプトは `.claude/hooks/` にあり、実行には bash が必要です（Windows では Git Bash か WSL）。jq はあれば使い、なくても動きます。
+`.claude/settings.json` に4つの hook を設定しています。スクリプトは `.claude/hooks/` にあり、実行には bash が必要です（Windows では Git Bash か WSL）。jq はあれば使い、なくても動きます。
 
 | hook | タイミング | 内容 |
 |---|---|---|
 | session-start | セッション開始、再開、`/clear`、圧縮の後 | 進行中・中断中の TASK の「現在のフェーズ」と「次の一手」を Claude に渡す |
 | freeze-guard | ファイル編集と Bash の実行の直前 | 進行中・中断中の TASK の `frozen_tests` にあるファイルへの書き込みを止める |
+| branch-guard | Bash の実行の直前 | `main` と `develop` への直接のコミット・マージ・プッシュを止める（GIT-02）。`origin` がないときのマージ（GIT-33）と `--ff-only` は通す |
 | format | ファイル編集の直後 | 技術・環境の資料にあるフォーマットコマンドで、編集したファイルを整形する |
 
 `claude` はリポジトリの直下で起動します。`.claude/settings.json`（hooks を含む）は起動したディレクトリの `.claude/` からだけ読まれるため、サブディレクトリで起動すると hooks が動きません。スクリプトは Claude Code が設定する `$CLAUDE_PROJECT_DIR`（セッションを開始したディレクトリ）を起点にファイルを探します。
@@ -335,9 +382,21 @@ guidelines の各ルールには ID（例: `TEST-03`）を振ります。レビ�
 
 | 種類 | 対象 |
 |---|---|
-| 禁止（deny） | `.env` 系ファイルの読み取り（`.env.example` は除く）、`git push` の強制上書き、`gh repo delete` |
-| 確認（ask） | `git push`、`gh pr merge` |
-| 許可（allow） | Context7 のツール |
+| 禁止（deny） | `.env` 系ファイルの読み取り（`.env.example` は除く）、`git push` の強制上書き、`git rebase`、`git commit --amend`、`gh repo delete` |
+| 確認（ask） | `gh pr merge` |
+| 許可（allow） | `git push`（`main`・`develop` へのプッシュは branch-guard が止める）、`bash .claude/scripts/ci.sh`、`gh pr checks`、Context7 のツール |
+
+### 4.12 Git の運用
+
+正本は [`docs/guidelines/git.md`](docs/guidelines/git.md) です。要点は次のとおりです。
+
+- **ブランチ**: 常設は `main`（リリース済み）と `develop`（統合先。GitHub の既定ブランチ）。作業は `develop` から切る `feature/` で行い、リリース済みの本番の緊急修正だけ `main` から `hotfix/` を切ります。`release/` ブランチは使いません。
+- **単位**: 1つの要件の設計と全実装で1ブランチ・1 PR です（開発開始と要件定義で1本、変更要求は計画から全実装まで1本、軽微な変更と全体点検は1件ごとに1本）。タスク記録の単位は変わりません。
+- **コミット**: タスク記録を更新する区切り（凍結、Green、レビュー合格、承認など）でコミットします。形は `feat(DES-003): 日本語の要約` です。履歴は書き換えません（凍結コミットのハッシュを残すため）。
+- **マージ**: すべてマージコミットです。全要件が終わったら `develop` を `main` にマージし、版のタグを付けます（2.9）。
+- **CI**: GitHub Actions が、下書きでない PR と `main`・`develop` へのプッシュで `.claude/scripts/ci.sh` を実行します。ci.sh は技術・環境の資料の開発コマンド（インストール、フォーマット、リント、ビルド、テスト）を順に実行し、テストを書けば自動で対象になります。開発開始の前は全体を飛ばします。言語の実行環境の準備は、開発開始（`/kickoff`）で Claude が ci.yml に書きます。Claude はマージの前に CI の成功を確かめます（GIT-24・25）。
+- **イシュー**: 使いません。依頼はチャットで受け、記録はタスク記録だけにします。
+- **GitHub を使わない場合**: PR の代わりに手元でマージし、差分リンクの代わりに `git diff --stat` を示し、CI の代わりに手元で ci.sh を実行します（GIT-25・33）。
 
 ## 5. Claude とのやり取り
 

@@ -1,6 +1,6 @@
 ---
 status: final
-updated: 2026-10-14
+updated: 2026-10-18
 related: []
 ---
 # docs 索引
@@ -18,6 +18,7 @@ docs 内の固定資料とフォルダの一覧である。**作業を始める�
 | `guidelines/review.md` | レビュー観点、P0 / P1 / P2 の定義、終了条件 | レビューをする、または受けるとき |
 | `guidelines/documentation.md` | 資料の書き方・更新ルール | docs 内の資料を作る、または更新するとき |
 | `guidelines/coding.md` | 言語に依存しないコーディング原則 | 実装する前、コードをレビューするとき |
+| `guidelines/git.md` | ブランチ、コミット、プッシュ、PR、承認の依頼（承認パケット）、リリース、hotfix | 作業ブランチを作るとき、コミット・PR・承認の依頼をするとき、リリースするとき |
 | `guidelines/refactoring.md` | プロジェクト全体の点検の観点（コード・資料間の齟齬）、修正の分類 | プロジェクト全体を点検・リファクタリングするとき |
 | `guidelines/templates/` | 各資料のテンプレート（`project/` の資料と同じ名前） | 新しい資料を作るとき |
 

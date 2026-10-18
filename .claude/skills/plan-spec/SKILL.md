@@ -8,17 +8,17 @@ argument-hint: "[REQ-ID | change <変更内容>]"
 引数: `$ARGUMENTS`（空なら要件定義、REQ の ID なら設計、`change` で始まれば変更要求の計画）
 
 ## 準備
-1. この会話でまだ読んでいない（圧縮などで内容が残っていない場合を含む）ときだけ、`docs/guidelines/planning.md`、`docs/guidelines/documentation.md`、`docs/guidelines/workflow.md` を読む。人間の作業は承認と確認だけにする（WF-12、WF-13）。
+1. この会話でまだ読んでいない（圧縮などで内容が残っていない場合を含む）ときだけ、`docs/guidelines/planning.md`、`docs/guidelines/documentation.md`、`docs/guidelines/workflow.md`、`docs/guidelines/git.md` を読む。人間の作業は承認と確認だけにする（WF-12、WF-13）。
 2. `docs/project/overview.md`、`docs/project/tech.md`、`docs/project/glossary.md` を読む。
 3. 引数が空で、`docs/project/requirements/` に REQ がすでにある場合は、最初の要件定義は終わっている。ユーザーの依頼内容を変更内容として、変更要求の計画（手順 10〜17）に進む（WF-01）。
-4. `task.sh new` で TASK ファイルを作り（設計なら関連 ID に対象の REQ を渡す。要件定義なら「要件定義」、設計なら「REQ-xxx の設計」、変更要求なら「変更要求: <変更内容の要約>」）、`task.sh status` で `in-progress` にする（WF-08）。
+4. `bash .claude/scripts/branch.sh start <ブランチ名>` で作業ブランチに入る（GIT-03・04）。ブランチ名は、要件定義なら `feature/setup`、変更要求なら `feature/change-<次の task.sh new に渡すファイル名>`、設計なら `feature/REQ-xxx-<REQ のファイル名の名前部分>` とする。ただし設計で、現在のブランチが変更要求のブランチ（`feature/change-`）なら切り替えない。`task.sh new` で TASK ファイルを作り（設計なら関連 ID に対象の REQ を渡す。要件定義なら「要件定義」、設計なら「REQ-xxx の設計」、変更要求なら「変更要求: <変更内容の要約>」）、`task.sh status` で `in-progress` にする（WF-08）。起点のコミット（`git rev-parse --short=12 HEAD`）を `task.sh log` で作業ログに書き、コミットする（GIT-10 (1)、GIT-12）。
 
 ## 要件定義（引数なし）
 5. overview.md の目的・スコープ・成功基準から要件を洗い出し、推奨案で内容を決める（PLAN-18）。PLAN-19 に当たる判断を先に洗い出し、質問の一覧を示してから（PLAN-26）、1問ずつ質問し、回答ごとに TASK に記録する（PLAN-01、PLAN-27）。
 6. 要件ごとに `docs/guidelines/templates/requirement.md` から `docs/project/requirements/REQ-xxx-<名前>.md` を作る（PLAN-08〜10）。`<名前>` は英語のケバブケースで、用語は glossary.md の「コード上の名前」を使う（DOC-04）。glossary.md にない用語は先に登録する（PLAN-17）。
 7. 要件の実装順を決め、順序と理由を TASK の「完了したこと」に書く（WF-17）。
 8. 全要件ができたら `/review-loop` Skill を使い、種別 `plan`、対象を全 REQ としてレビューする。
-9. 合格したら、要件一覧、実装順、各 REQ の「判断」セクションをユーザーに示して承認を求める（WF-05）。承認後、各 REQ を `status: final` にする。
+9. 合格したらコミットする（GIT-10 (2)）。`bash .claude/scripts/branch.sh pr` でプッシュし、PR 本文を最新にして下書きを解除し、CI の結果を待つ（GIT-20〜22、GIT-25）。要件一覧、実装順、各 REQ の「判断」セクションを承認パケット（GIT-30・31）で示して承認を求める（WF-05）。承認後、各 REQ を `status: final` にし、TASK を `done` にしてコミット・プッシュし、CI の成功を確かめてから PR をマージする（GIT-23、GIT-25。`feature/setup` の範囲はここまで）。
 
 ## 変更要求の計画（引数が `change <変更内容>`）
 10. 影響一覧を作り、TASK の「完了したこと」に書く（PLAN-25）。既存の REQ・DES・テスト・資料の事実は Grep と Explore サブエージェントで調べる（WF-03、PLAN-02）。
@@ -27,7 +27,7 @@ argument-hint: "[REQ-ID | change <変更内容>]"
 13. 影響一覧の REQ・DES のそれぞれに「追加」「改訂」「削除」「影響なし（理由）」を書く（WF-19）。
 14. 変更分の実装順を決め、順序と理由を TASK の「完了したこと」に書く（WF-17 を準用、WF-18）。
 15. `/review-loop` Skill を使い、種別 `plan`、対象を追加・改訂した REQ、改訂した overview.md、影響一覧を書いた TASK としてレビューする（改訂した資料の差分も渡す。REV-12）。
-16. 合格したら、影響一覧、実装順、各 REQ の「判断」セクション、overview.md の改訂点をユーザーに示して承認を求める（WF-19）。承認後、追加・改訂した REQ と overview.md を `status: final` にする。
+16. 合格したらコミットし（GIT-10 (2)）、`bash .claude/scripts/branch.sh pr` でプッシュと下書き PR の作成を行う（GIT-20・21）。影響一覧、実装順、各 REQ の「判断」セクション、overview.md の改訂点を承認パケット（GIT-30・31）で示して承認を求める（WF-19）。承認後、追加・改訂した REQ と overview.md を `status: final` にし、コミット・プッシュする（GIT-10 (6)）。PR は変更分の実装がすべて終わるまでマージしない（GIT-03）。
 17. 影響を受ける REQ ごとに、実装順に `/plan-spec REQ-xxx` で設計に進むと伝える。WF-08 の例外（REQ も DES も1つだけ）に当たる場合は、この TASK のまま設計・実装に進んでよい。
 
 ## 設計（引数が REQ の ID）
@@ -38,9 +38,10 @@ argument-hint: "[REQ-ID | change <変更内容>]"
 22. `docs/project/test-items.md`（なければ `docs/guidelines/templates/test-items.md` から作る）に、DES ごとの見出しを作ってテスト項目を書く（TEST-08、TEST-11）。既存の振る舞いを保つ確認の項目には「保持」の印を付ける（TEST-21）。改訂した DES の項目は PLAN-22 に従って更新する。
 23. 対象 REQ の受け入れ基準（「（削除）」を除く）がすべて DES に割り当てられ、test-items.md のどれかの項目で検証されるか確認する（PLAN-13）。
 24. `/review-loop` Skill を使い、種別 `plan`、対象を作成・改訂した DES（architecture.md を変えた場合はそれも）としてレビューする。
-25. 合格したら、設計と各 DES の「判断」セクションをユーザーに示して承認を求める（WF-06）。承認後、各 DES を `status: final` にし、DES ごとに実装用の TASK（`status: todo`、`related` に DES の ID）を作る。DES が1つだけなら、この TASK を実装に引き継いでよい（WF-08）。その場合は `task.sh relate` でこの TASK の `related` に DES の ID を足す（WF-20）。
+25. 合格したらコミットし（GIT-10 (2)）、`bash .claude/scripts/branch.sh pr` でプッシュと下書き PR の作成を行う（GIT-20・21）。設計と各 DES の「判断」セクションを承認パケット（GIT-30・31）で示して承認を求める（WF-06）。PR は実装が終わるまでマージしない（GIT-03）。承認後、各 DES を `status: final` にし、DES ごとに実装用の TASK（`status: todo`、`related` に DES の ID）を作る。DES が1つだけなら、この TASK を実装に引き継いでよい（WF-08）。その場合は `task.sh relate` でこの TASK の `related` に DES の ID を足す（WF-20）。
 
 ## 共通
 - 判断が DOC-15 を満たしたら ADR を、用語が決まったら glossary.md を更新する（PLAN-16、PLAN-17）。
 - 設計中に要件の誤りを見つけたら止めて報告する（WF-11）。
-- 完了時に TASK を `done` にし、作業ログを書く。次に進む Skill（設計なら `/plan-spec REQ-xxx`、実装なら `/implement-tdd DES-xxx`）を伝える。DES が1つだけで実装まで終えた場合は、`bash .claude/scripts/progress.sh` の「プロジェクト全体の点検の材料」で WF-24 に当たるか確かめ、当たれば `/refactor` の実行を1行で提案する。
+- 承認パケットへの返答を受けたら、PR へのコメントも読む（GIT-32）。
+- 完了時に TASK を `done` にし、作業ログを書き、コミット・プッシュする（GIT-10 (6)）。次に進む Skill（設計なら `/plan-spec REQ-xxx`、実装なら `/implement-tdd DES-xxx`）を伝える。DES が1つだけで実装まで終えた場合は、`bash .claude/scripts/progress.sh` の「プロジェクト全体の点検の材料」で WF-24 に当たるか確かめ、当たれば `/refactor` の実行を1行で提案する。
