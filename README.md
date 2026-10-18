@@ -36,7 +36,7 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
    git add -A && git commit -m "chore: テンプレートを導入"
    git switch -c develop
    ```
-3. GitHub を使う場合は、`gh` CLI を用意してリポジトリを作り、両方のブランチをプッシュして、既定ブランチを `develop` にします。リポジトリの設定で、マージ方式を「Create a merge commit」だけにし、マージ後のブランチの自動削除を有効にします。ルールセットが使えるプラン（公開リポジトリ、または Pro / Team 以上）なら、`main` と `develop` に「PR を必須」「強制プッシュの禁止」「削除の禁止」を設定します。
+3. GitHub を使う場合は、`gh` CLI を用意してリポジトリを作り、両方のブランチをプッシュして、既定ブランチを `develop` にします。リポジトリの設定で、マージ方式を「Create a merge commit」だけにし、マージ後のブランチの自動削除を有効にします。ルールセットが使えるプラン（公開リポジトリ、または Pro / Team 以上）なら、`main` と `develop` に「PR を必須」「強制プッシュの禁止」「削除の禁止」を設定し、CI を一度動かした後で、必須のステータスチェックに `ci` を加えます。CI（`.github/workflows/ci.yml`）は Actions が有効なら追加の設定なしで動きます（4.12）。
    ```bash
    gh repo create <名前> --private --source . --remote origin
    git push -u origin main develop
@@ -182,11 +182,12 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 ├── .mcp.json                  # 共有する MCP サーバー。Context7（ライブラリの最新ドキュメント）のみ
 ├── .gitignore                 # レビュー用の差分ファイル（.claude/review/）を除外
 ├── .github/
-│   └── pull_request_template.md  # PR 本文の形（GIT-21）
+│   ├── pull_request_template.md  # PR 本文の形（GIT-21）
+│   └── workflows/ci.yml       # CI。下書きでない PR と main・develop へのプッシュで ci.sh を実行（GIT-24）
 ├── .claude/
 │   ├── settings.json          # 権限、hooks、応答言語（日本語）などの共有設定
 │   ├── hooks/                 # hook のスクリプト。session-start / freeze-guard / branch-guard / format と共通関数 lib.sh
-│   ├── scripts/               # task.sh（タスク記録の作成・更新）、branch.sh（作業ブランチ・下書き PR・差分リンク）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定）。後の2つは読み取りのみ
+│   ├── scripts/               # task.sh（タスク記録の作成・更新）、branch.sh（作業ブランチ・下書き PR・差分リンク）、ci.sh（開発コマンドを順に実行する CI の確認）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定）。後の2つは読み取りのみ
 │   ├── agents/                # サブエージェント定義。plan-reviewer / test-reviewer / code-reviewer、全体点検の code-auditor / docs-auditor（探索は組み込みの Explore）
 │   └── skills/                # 各フェーズの手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor /release
 └── docs/
@@ -383,7 +384,7 @@ guidelines の各ルールには ID（例: `TEST-03`）を振ります。レビ�
 |---|---|
 | 禁止（deny） | `.env` 系ファイルの読み取り（`.env.example` は除く）、`git push` の強制上書き、`git rebase`、`git commit --amend`、`gh repo delete` |
 | 確認（ask） | `gh pr merge` |
-| 許可（allow） | `git push`（`main`・`develop` へのプッシュは branch-guard が止める）、Context7 のツール |
+| 許可（allow） | `git push`（`main`・`develop` へのプッシュは branch-guard が止める）、`bash .claude/scripts/ci.sh`、`gh pr checks`、Context7 のツール |
 
 ### 4.12 Git の運用
 
@@ -393,8 +394,9 @@ guidelines の各ルールには ID（例: `TEST-03`）を振ります。レビ�
 - **単位**: 1つの要件の設計と全実装で1ブランチ・1 PR です（開発開始と要件定義で1本、変更要求は計画から全実装まで1本、軽微な変更と全体点検は1件ごとに1本）。タスク記録の単位は変わりません。
 - **コミット**: タスク記録を更新する区切り（凍結、Green、レビュー合格、承認など）でコミットします。形は `feat(DES-003): 日本語の要約` です。履歴は書き換えません（凍結コミットのハッシュを残すため）。
 - **マージ**: すべてマージコミットです。全要件が終わったら `develop` を `main` にマージし、版のタグを付けます（2.9）。
+- **CI**: GitHub Actions が、下書きでない PR と `main`・`develop` へのプッシュで `.claude/scripts/ci.sh` を実行します。ci.sh は技術・環境の資料の開発コマンド（インストール、フォーマット、リント、ビルド、テスト）を順に実行し、テストを書けば自動で対象になります。開発開始の前は全体を飛ばします。言語の実行環境の準備は、開発開始（`/kickoff`）で Claude が ci.yml に書きます。Claude はマージの前に CI の成功を確かめます（GIT-24・25）。
 - **イシュー**: 使いません。依頼はチャットで受け、記録はタスク記録だけにします。
-- **GitHub を使わない場合**: PR の代わりに手元でマージし、差分リンクの代わりに `git diff --stat` を示します（GIT-33）。
+- **GitHub を使わない場合**: PR の代わりに手元でマージし、差分リンクの代わりに `git diff --stat` を示し、CI の代わりに手元で ci.sh を実行します（GIT-25・33）。
 
 ## 5. Claude とのやり取り
 

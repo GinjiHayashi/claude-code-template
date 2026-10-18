@@ -17,10 +17,10 @@ argument-hint: "[版番号（省略時は GIT-51 で決める）]"
 
 ## PR と承認
 5. `gh pr create --base main --head develop --title "release: <版番号>" --body <本文>` で PR を作る。本文には版番号、決めた理由（GIT-51）、4 の一覧を書く。
-6. 承認パケット（GIT-30）で承認を求める。差分リンクは `bash .claude/scripts/branch.sh link main` で作り、PR のリンクも添える。返答を受けたら PR へのコメントも読む（GIT-32）。
+6. `gh pr checks <PR 番号> --watch` で CI の結果を待つ（GIT-25）。承認パケット（GIT-30）で承認を求める。差分リンクは `bash .claude/scripts/branch.sh link main` で作り、PR のリンクも添える。返答を受けたら PR へのコメントも読む（GIT-32）。
 
 ## マージとタグ
-7. 承認されたら `gh pr merge <PR 番号> --merge` でマージする（develop は削除しない）。
+7. 承認されたら、CI の成功を確かめてから（GIT-25）`gh pr merge <PR 番号> --merge` でマージする（develop は削除しない）。
 8. `git switch main && git pull --ff-only` の後、`git tag -a <版番号> -m "<版番号>"` でタグを付け、`git push origin <版番号>` でプッシュする。
 9. `gh release create <版番号> --generate-notes` でリリースノートを作る。
 10. `git switch develop` に戻り、版番号とリリースノートのリンクを報告する。

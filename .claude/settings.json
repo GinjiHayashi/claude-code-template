@@ -20,6 +20,8 @@
     ],
     "allow": [
       "Bash(git push *)",
+      "Bash(bash .claude/scripts/ci.sh*)",
+      "Bash(gh pr checks *)",
       "mcp__context7"
     ]
   },

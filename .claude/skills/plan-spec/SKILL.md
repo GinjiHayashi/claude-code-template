@@ -18,7 +18,7 @@ argument-hint: "[REQ-ID | change <変更内容>]"
 6. 要件ごとに `docs/guidelines/templates/requirement.md` から `docs/project/requirements/REQ-xxx-<名前>.md` を作る（PLAN-08〜10）。`<名前>` は英語のケバブケースで、用語は glossary.md の「コード上の名前」を使う（DOC-04）。glossary.md にない用語は先に登録する（PLAN-17）。
 7. 要件の実装順を決め、順序と理由を TASK の「完了したこと」に書く（WF-17）。
 8. 全要件ができたら `/review-loop` Skill を使い、種別 `plan`、対象を全 REQ としてレビューする。
-9. 合格したらコミットする（GIT-10 (2)）。`bash .claude/scripts/branch.sh pr` でプッシュし、PR 本文を最新にして下書きを解除する（GIT-20〜22）。要件一覧、実装順、各 REQ の「判断」セクションを承認パケット（GIT-30・31）で示して承認を求める（WF-05）。承認後、各 REQ を `status: final` にし、TASK を `done` にしてコミット・プッシュし、PR をマージする（GIT-23。`feature/setup` の範囲はここまで）。
+9. 合格したらコミットする（GIT-10 (2)）。`bash .claude/scripts/branch.sh pr` でプッシュし、PR 本文を最新にして下書きを解除し、CI の結果を待つ（GIT-20〜22、GIT-25）。要件一覧、実装順、各 REQ の「判断」セクションを承認パケット（GIT-30・31）で示して承認を求める（WF-05）。承認後、各 REQ を `status: final` にし、TASK を `done` にしてコミット・プッシュし、CI の成功を確かめてから PR をマージする（GIT-23、GIT-25。`feature/setup` の範囲はここまで）。
 
 ## 変更要求の計画（引数が `change <変更内容>`）
 10. 影響一覧を作り、TASK の「完了したこと」に書く（PLAN-25）。既存の REQ・DES・テスト・資料の事実は Grep と Explore サブエージェントで調べる（WF-03、PLAN-02）。
