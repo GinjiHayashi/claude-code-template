@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# プロジェクト全体の点検のうち、機械で判定できる観点（RF-20・24・25・26）を調べ、指摘を REV-16 の表の行で出力する。
+# プロジェクト全体の点検のうち、機械で判定できる観点（RF-20・24・25・26）を調べ、指摘を REV-17 の表の行で出力する。
 # ファイルは変更しない。基準の正本は docs/guidelines/refactoring.md。
 # 使い方:
 #   audit.sh
@@ -46,14 +46,14 @@ check_traceability() {
     number=$(printf '%s' "${reference##*#}")
     file=$(document_of "$des_id")
     if [ -z "$file" ]; then
-      finding RF-20 TEST-09 "$location" "$des_id の DES がない" "参照を正しい DES に直す"
+      finding RF-20 TEST-12 "$location" "$des_id の DES がない" "参照を正しい DES に直す"
       continue
     fi
     status=$(front_matter_value "$file" status)
     if [ "$status" = "retired" ]; then
-      finding RF-20 TEST-22 "$location" "retired の $des_id を参照するテストが残っている" "変更要求の候補にする（RF-40 (2)）"
+      finding RF-20 TEST-09 "$location" "retired の $des_id を参照するテストが残っている" "変更要求の候補にする（RF-40 (2)）"
     elif ! test_item_numbers_of "$des_id" | grep -qx "$number"; then
-      finding RF-20 TEST-09 "$location" "$des_id #$number が test-items.md にない" "test-items.md かテストの説明を直す"
+      finding RF-20 TEST-12 "$location" "$des_id #$number が test-items.md にない" "test-items.md かテストの説明を直す"
     fi
   done
   for des in "$PROJECT_DIR"/design/DES-*.md; do
@@ -61,7 +61,7 @@ check_traceability() {
     [ "$(front_matter_value "$des" status)" = "final" ] || continue
     des_id=$(basename "$des" | sed 's/^\(DES-[0-9]*\)-.*/\1/')
     grep -q "^## $des_id\( \|$\)" "$TEST_ITEMS" 2>/dev/null \
-      || finding RF-20 TEST-08 "$(to_relative "$des")" "test-items.md に $des_id の見出しがない" "test-items.md に見出しと項目を足す"
+      || finding RF-20 TEST-11 "$(to_relative "$des")" "test-items.md に $des_id の見出しがない" "test-items.md に見出しと項目を足す"
   done
 }
 
@@ -87,7 +87,8 @@ check_index() {
 # RF-25: 定義されていないルール ID と、存在しない資料 ID の参照。
 check_references() {
   local defined id target
-  defined=$(grep -hoE '^\| (WF|PLAN|TEST|REV|DOC|CODE|RF|GIT)-[0-9]+ \|' "$DOCS_DIR"/guidelines/*.md | tr -d '| ' | sort -u)
+  # 定義は箇条書き（`- **WF-01** …`）と、列が3つ以上の表の行（`| WF-05 | …`）にある。
+  defined=$(grep -hoE '^(- \*\*|\| )(WF|PLAN|TEST|REV|DOC|CODE|RF|GIT)-[0-9]+(\*\*| \|)' "$DOCS_DIR"/guidelines/*.md | grep -oE '[A-Z]+-[0-9]+' | sort -u)
   for target in "$ROOT/CLAUDE.md" "$ROOT/README.md" "$DOCS_DIR" "$ROOT/.claude/skills" "$ROOT/.claude/agents" "$ROOT/.claude/hooks" "$ROOT/.claude/scripts"; do
     [ -e "$target" ] || continue
     grep -rnoE '(^|[^A-Za-z])(WF|PLAN|TEST|REV|DOC|CODE|RF|GIT)-[0-9]+' "$target" 2>/dev/null | while IFS= read -r reference; do
@@ -110,7 +111,7 @@ check_status() {
   for file in "$PROJECT_DIR"/*.md "$PROJECT_DIR"/*/*.md; do
     [ -f "$file" ] || continue
     [ "$(front_matter_value "$file" status)" = "final" ] || continue
-    grep -q '（未記入）' "$file" && finding RF-26 DOC-17 "$(to_relative "$file")" "final なのに（未記入）が残っている" "記入するか status を draft に戻す"
+    grep -q '（未記入）' "$file" && finding RF-26 DOC-18 "$(to_relative "$file")" "final なのに（未記入）が残っている" "記入するか status を draft に戻す"
   done
   for des in "$PROJECT_DIR"/design/DES-*.md; do
     [ -f "$des" ] || continue

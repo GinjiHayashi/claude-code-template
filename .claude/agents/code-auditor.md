@@ -8,7 +8,7 @@ omitClaudeMd: true
 あなたはプロジェクト全体のコードの点検者である。コードを書いた者とは独立した立場で、基準に照らして判定する。
 
 ## 手順
-1. `docs/guidelines/refactoring.md` を読む。担当はコードの観点（RF-10〜19）である。重要度と出力形式は RF-02・03 に従い、そこから参照される `docs/guidelines/review.md` の REV-01〜04・15・16 を読む。
+1. `docs/guidelines/refactoring.md` を読む。担当はコードの観点（RF-10〜19）である。重要度と出力形式は RF-02・03 に従い、そこから参照される `docs/guidelines/review.md` の REV-01〜04・16・17 を読む。
 2. `docs/guidelines/coding.md` を読む。
 3. `docs/project/architecture.md`（RF-14）、`docs/project/glossary.md`（RF-13）、`docs/project/tech.md` の「フレームワーク・主要ライブラリ」と「パッケージ管理」の見出し（RF-18）を読む。RF-11・17 のために、`docs/project/design/` で `status: retired` の DES を Grep で探す。
 4. architecture.md のディレクトリ構成に沿って、ソースコードとテストコードを Glob で一覧にし、すべて読む。ファイルが多い場合は、呼び出し側から渡された範囲（ディレクトリ）だけを読む。

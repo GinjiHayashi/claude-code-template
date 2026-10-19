@@ -5,20 +5,20 @@ argument-hint: "<DES-ID>"
 ---
 # 実装（TDD）
 
-対象: `$ARGUMENTS`（DES の ID）。サイクルの基準は TEST-01〜07・21〜23、コードの基準は coding.md。
+対象: `$ARGUMENTS`（DES の ID）。サイクルの基準は TEST-01〜10、コードの基準は coding.md。
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/testing.md`、`docs/guidelines/coding.md`、`docs/guidelines/git.md` を読む。
 2. 対象の DES、対応する REQ、`docs/project/test-items.md` の対象 DES の見出し、`docs/project/architecture.md`、`docs/project/tech.md` を読む。
 3. 変更のブランチ（`feature/change-`）にいなければ `bash .claude/scripts/branch.sh start feature/REQ-xxx-<名前>` で対象 REQ のブランチに入る。対象 DES の TASK を `task.sh status <TASK-ID> in-progress` にしてコミットする。
-   - 振る舞いを削除するだけの DES（TEST-23）は 4〜9 を省き、「既存の振る舞いへの影響」に挙げたテストとコードを削除して 11 に進む。完了時に DES を `retired` にし、test-items.md の見出しに `（retired）` を付ける（PLAN-24）。
+   - 振る舞いを削除するだけの DES（TEST-10）は 4〜9 を省き、「既存の振る舞いへの影響」に挙げたテストとコードを削除して 11 に進む。完了時に DES を `retired` にし、test-items.md の見出しに `（retired）` を付ける（PLAN-24）。
 
 ## テストとスタブ
 4. DES のインタフェースどおりにスタブを作る。既存の関数を変える場合は既存の実装を残す。
-5. test-items.md の機械検証の項目ごとにテストを書く。説明に `DES-xxx #n` を書く（TEST-09）。既存のテストは「既存の振る舞いへの影響」で決めたものだけを変更・削除する。
+5. test-items.md の機械検証の項目ごとにテストを書く。説明に `DES-xxx #n` を書く（TEST-12）。既存のテストは「既存の振る舞いへの影響」で決めたものだけを変更・削除する。
 
 ## Red
-6. tech.md の「テスト（全件）」を実行し、TEST-03（既存コードを変える DES は TEST-21）を満たすか確かめる。満たさなければ 5 に戻る。件数を `task.sh log` で書く。
+6. tech.md の「テスト（全件）」を実行し、TEST-03（既存コードを変える DES は TEST-08）を満たすか確かめる。満たさなければ 5 に戻る。件数を `task.sh log` で書く。
 
 ## テストのレビューと凍結
 7. `/review-loop test <テストファイル>` でレビューする。テストを直したら 6 からやり直す。
@@ -36,5 +36,5 @@ argument-hint: "<DES-ID>"
 ## 完了
 14. `bash .claude/scripts/branch.sh pr` でプッシュする。この DES で作業ブランチの範囲（GIT-03 の表）の実装がすべて終わるなら、PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行する。
 15. 人間確認の項目を承認パケット（GIT-30）で示して確認を求める。差分リンクは、テストを `branch.sh link --commit <凍結コミット>`、実装を `branch.sh link <凍結コミット>` で作る。返答の後に PR へのコメントも読む（GIT-32）。
-16. TASK を `done` にしてコミットする。範囲の実装がすべて終わっていれば `bash .claude/scripts/branch.sh merge` でマージする。設計の誤りを見つけていたら WF-10 に従う。
-17. `bash .claude/scripts/progress.sh` の「プロジェクト全体の点検の材料」が WF-24 に当たれば、`/refactor` の実行を1行で提案する。
+16. TASK を `done` にしてコミットする。範囲の実装がすべて終わっていれば `bash .claude/scripts/branch.sh merge` でマージする。設計の誤りを見つけていたら WF-13 に従う。
+17. `bash .claude/scripts/progress.sh` の「プロジェクト全体の点検の材料」が WF-25 に当たれば、`/refactor` の実行を1行で提案する。
