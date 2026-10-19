@@ -1,2 +1,5 @@
 # レビュー用の差分ファイル（/review-loop が作る。REV-12）
 .claude/review/
+
+# 開発用のリポジトリを作る設定（.env.sample を写して書く。個人の設定なのでコミットしない）
+.env

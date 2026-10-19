@@ -5,7 +5,7 @@ related: []
 ---
 # Git の運用
 
-ブランチ、コミット、PR、承認の依頼、リリース、hotfix の基準の正本である。手順は各 Skill に、操作はスクリプト（`.claude/scripts/task.sh begin`、`branch.sh`、`ci.sh`。使い方は各スクリプトの冒頭）にある。GitHub は `gh` CLI で操作する。
+ブランチ、コミット、PR、承認の依頼、リリース、hotfix の基準の正本である。手順は各 Skill に、操作はスクリプト（`.claude/scripts/` の `task.sh begin`、`branch.sh`、`ci.sh`。開発用のリポジトリの作成は `create-repo.sh`、ハーネスの更新の取り込みは `update-harness.sh` で、人間は `npm run create-repo`・`npm run update-harness` で呼ぶ。使い方は各スクリプトの冒頭）にある。GitHub は `gh` CLI で操作する。
 
 ## ブランチ
 
@@ -27,6 +27,7 @@ GIT-03 の表:
 | 軽微な変更 | 1件で1つ | `feature/change-<TASK のファイル名>`（変更要求に切り替えたら同じブランチで続ける） | 完了時の確認（WF-15） |
 | プロジェクト全体の点検 | 1回で1つ | `feature/refactor-<YYYYMMDD>` | 完了時の確認 |
 | 本番の緊急修正 | 1件で1つ | `hotfix/v<次のパッチ版>` | 完了時の確認（GIT-61） |
+| ハーネス（このテンプレート）の更新の取り込み | 作らない | `feature/harness-update`（`npm run update-harness` が切る） | 取り込んだ差分の確認 |
 
 ## コミット
 
