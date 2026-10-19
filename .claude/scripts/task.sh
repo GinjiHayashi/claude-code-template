@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# タスク記録（docs/project/tasks/TASK-xxx-*.md）を作成・更新する。更新規則は DOC-10〜13、WF-08・09。
+# タスク記録（docs/project/tasks/TASK-xxx-*.md）を作成・更新する。更新規則は DOC-10〜13、WF-09・11。
 # 使い方:
+#   task.sh begin <ブランチ名|hotfix|-> <ファイル名> <タスク名> [関連ID ...]
+#       作業ブランチに入り（- なら今のブランチのまま）、TASK を作って in-progress にし、起点のコミットを作業ログに書いてコミットする（GIT-10 (1)）
 #   task.sh new <ファイル名（英語のケバブケース）> <タスク名> [関連ID ...]   新しい TASK を作り、パスを出力する（番号は全ブランチの最大＋1）
 #   task.sh status <TASK-ID> <todo|in-progress|done|paused>               フロントマターの status を変える
 #   task.sh phase <TASK-ID> <現在のフェーズ> <次の一手>                    2つのセクションを上書きする
 #   task.sh log <TASK-ID> <フェーズ> <行ったことと結果>                    作業ログに1行追記する（DOC-11）
 #   task.sh freeze <TASK-ID> <テストファイルのパス>                         frozen_tests に追記する（TEST-04）
-#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID を追記する（WF-20）
+#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID を追記する（WF-10）
 set -eu
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
@@ -81,6 +83,24 @@ cmd_new() {
   printf '%s\n' "${file#"$ROOT"/}"
 }
 
+cmd_begin() {
+  [ $# -ge 3 ] || fail "begin <ブランチ名 | hotfix | -> <ファイル名> <タスク名> [関連ID ...]"
+  local branch="$1" base file id; shift
+  if [ "$branch" != "-" ]; then
+    bash "$(dirname "$0")/branch.sh" start "$branch" >/dev/null || exit 1
+  fi
+  branch=$(git -C "$ROOT" symbolic-ref --quiet --short HEAD) || fail "ブランチ上にいない（detached HEAD）"
+  case "$branch" in main|develop) fail "$branch では TASK を始めない。作業ブランチ（GIT-03）を指定する" ;; esac
+  base=$(git -C "$ROOT" rev-parse --short=12 HEAD)
+  file=$(cmd_new "$@") || exit 1
+  id=$(basename "$file" | sed -n 's/^\(TASK-[0-9]*\)-.*/\1/p')
+  cmd_status "$id" in-progress
+  cmd_log "$id" 開始 "起点のコミット $base"
+  git -C "$ROOT" add "$file"
+  git -C "$ROOT" commit --quiet -m "chore($id): TASK を作成" -m "Refs: $id"
+  printf 'TASK: %s\nブランチ: %s\n起点のコミット: %s\n' "$file" "$branch" "$base"
+}
+
 cmd_status() {
   [ $# -eq 2 ] || fail "status <TASK-ID> <todo|in-progress|done|paused>"
   case "$2" in todo|in-progress|done|paused) ;; *) fail "status は todo / in-progress / done / paused のどれか（DOC-08）: $2" ;; esac
@@ -141,9 +161,10 @@ cmd_relate() {
   '
 }
 
-[ $# -ge 1 ] || fail "サブコマンド（new / status / phase / log / freeze / relate）を指定する"
+[ $# -ge 1 ] || fail "サブコマンド（begin / new / status / phase / log / freeze / relate）を指定する"
 sub="$1"; shift
 case "$sub" in
+  begin) cmd_begin "$@" ;;
   new) cmd_new "$@" ;;
   status) cmd_status "$@" ;;
   phase) cmd_phase "$@" ;;

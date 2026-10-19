@@ -90,6 +90,11 @@ front_matter_value() {
   ' "$file"
 }
 
+# フロントマターの related（例: [REQ-001, REQ-002]）を空白区切りで返す。
+related_of() {
+  front_matter_value "$1" related | tr -d '[]' | tr ',' ' '
+}
+
 # status: in-progress / paused の TASK ファイルを1行1件で返す（paused 中も凍結を保つ）。
 in_progress_tasks() {
   local task

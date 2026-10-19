@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # プロジェクトの進捗の材料（資料のフロントマターと TASK の記述）を集計して出力する。ファイルは変更しない。
-# 実装状況の判定は WF-20、次の作業の決め方は WF-22、点検の提案は WF-24、報告の形は /progress Skill が正本。
+# 実装状況の判定は WF-10、次の作業の決め方は WF-23、点検の提案は WF-25、報告の形は /progress Skill が正本。
 # 使い方:
 #   progress.sh
 set -u
@@ -11,11 +11,6 @@ PROJECT_DIR="$ROOT/docs/project"
 # 本文の最初の「# 」見出し（資料の題名）を返す。
 title_of() {
   awk '/^# / { sub(/^# /, ""); print; exit }' "$1"
-}
-
-# フロントマターの related（例: [REQ-001, REQ-002]）を空白区切りで返す。
-related_of() {
-  front_matter_value "$1" related | tr -d '[]' | tr ',' ' '
 }
 
 # 見出し $2 のセクション本文（> の説明行と空行を除く）を返す。
@@ -106,7 +101,7 @@ print_tasks() {
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
 }
 
-# 実装順は要件定義と変更要求の TASK の「完了したこと」に書かれる（WF-17、WF-18）。
+# 実装順は要件定義と変更要求の TASK の「完了したこと」に書かれる（WF-03、WF-20）。
 print_order_sources() {
   local task title
   echo
@@ -132,9 +127,9 @@ print_open_issues() {
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
 }
 
-# WF-24 の判定材料: 最後に done になった点検の TASK と、その後の実装・変更要求の TASK。
+# WF-25 の判定材料: 最後に done になった点検の TASK と、その後に done になった実装の TASK の件数。
 print_refactor_basis() {
-  local task title last_number=0 last_task="なし" number implemented=0 has_des id changes=""
+  local task last_number=0 last_task="なし" number implemented=0 has_des id
   while IFS= read -r task; do
     [ "$(front_matter_value "$task" status)" = "done" ] || continue
     case "$(title_of "$task")" in
@@ -144,8 +139,6 @@ print_refactor_basis() {
   while IFS= read -r task; do
     number=$((10#$(basename "$task" | sed 's/^TASK-\([0-9]*\)-.*/\1/')))
     [ "$number" -gt "$last_number" ] || continue
-    title=$(title_of "$task")
-    case "$title" in *" 変更要求:"*) changes="$changes- $title（status: $(front_matter_value "$task" status)、related: $(related_of "$task" | xargs)）"$'\n' ;; esac
     [ "$(front_matter_value "$task" status)" = "done" ] || continue
     has_des=""
     for id in $(related_of "$task"); do
@@ -154,12 +147,9 @@ print_refactor_basis() {
     [ -n "$has_des" ] && implemented=$((implemented + 1))
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
   echo
-  echo "## プロジェクト全体の点検の材料（WF-24）"
+  echo "## プロジェクト全体の点検の材料（WF-25）"
   echo "- 最後に done になった点検の TASK: $last_task"
   echo "- 点検の後の実装（done の実装の TASK）: $implemented 件"
-  echo "- 点検の後の変更要求の TASK:"
-  printf '%s' "${changes:-（なし）
-}"
 }
 
 echo "# 進捗の材料（$(date +%Y-%m-%d)）"
