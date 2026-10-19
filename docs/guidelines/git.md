@@ -5,7 +5,7 @@ related: []
 ---
 # Git の運用
 
-ブランチ、コミット、プッシュ、PR、CI、承認の依頼、リリース、hotfix の正本である。ブランチの作成・PR・差分リンクは `.claude/scripts/branch.sh`、CI の確認は `.claude/scripts/ci.sh`、テンプレートからのリポジトリの作成は `.claude/scripts/create-repo.sh`、テンプレートの更新の取り込みは `.claude/scripts/update-template.sh`（使い方はスクリプト冒頭）で行う。GitHub は `gh` CLI で操作する。
+ブランチ、コミット、プッシュ、PR、CI、承認の依頼、リリース、hotfix の正本である。ブランチの作成・PR・差分リンクは `.claude/scripts/branch.sh`、CI の確認は `.claude/scripts/ci.sh`、開発用のリポジトリの作成は `.claude/scripts/create-repo.sh`、ハーネスの更新の取り込みは `.claude/scripts/update-harness.sh`（使い方はスクリプト冒頭。人間は `npm run create-repo`・`npm run update-harness` で呼ぶ）で行う。GitHub は `gh` CLI で操作する。
 
 ## ブランチ
 
@@ -27,7 +27,7 @@ GIT-03 の表:
 | 軽微な変更 | `feature/change-<task.sh new に渡したファイル名>`（変更要求に切り替えたら、同じブランチで続ける） | 完了時の確認（WF-15） |
 | プロジェクト全体の点検 | `feature/refactor-<YYYYMMDD>` | 完了時の確認 |
 | 本番の緊急修正 | `hotfix/v<次のパッチ版>`（`branch.sh start hotfix` が決める） | 完了時の確認（GIT-61） |
-| テンプレートの更新の取り込み | `feature/template-update`（`update-template.sh` が切る） | 取り込んだ差分の確認 |
+| ハーネス（このテンプレート）の更新の取り込み | `feature/harness-update`（`npm run update-harness` が切る） | 取り込んだ差分の確認 |
 
 ## コミット
 
