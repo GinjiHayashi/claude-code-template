@@ -1,5 +1,41 @@
 # Claude Code 開発環境テンプレート
 
+## 目次
+
+- [1. 概要](#1-概要)
+- [2. クイックスタート](#2-クイックスタート)
+  - [2.1 共通の準備](#21-共通の準備)
+    - [0. 必要なツールを入れる](#0-必要なツールを入れる)
+    - [1. 開発用のリポジトリを作る](#1-開発用のリポジトリを作る)（[.env の書き方](#env-の書き方)）
+    - [2. Claude Code を起動する](#2-claude-code-を起動する)
+  - [2.2 新しいプロジェクトを始める](#22-新しいプロジェクトを始める)
+  - [2.3 機能を追加する・仕様を変える・機能を削除する](#23-機能を追加する仕様を変える機能を削除する)
+  - [2.4 小さな不具合や文言・設定を直す](#24-小さな不具合や文言設定を直す)
+  - [2.5 ドキュメントだけを直す](#25-ドキュメントだけを直す)
+  - [2.6 中断した作業を再開する](#26-中断した作業を再開する)
+  - [2.7 進捗・次の作業・残作業を確かめる](#27-進捗次の作業残作業を確かめる)
+  - [2.8 コード全体を整理し、資料どうしの齟齬を直す](#28-コード全体を整理し資料どうしの齟齬を直す)
+  - [2.9 リリースする](#29-リリースする)
+  - [2.10 リリース済みの本番の不具合を急いで直す（hotfix）](#210-リリース済みの本番の不具合を急いで直すhotfix)
+  - [2.11 ハーネスの更新を取り込む](#211-ハーネスの更新を取り込む)
+- [3. フォルダ・ファイル構成](#3-フォルダファイル構成)
+  - [3.1 docs/guidelines/（全プロジェクト共通の開発ルール）](#31-docsguidelines全プロジェクト共通の開発ルール)
+  - [3.2 docs/project/（プロジェクト固有の資料）](#32-docsprojectプロジェクト固有の資料)
+- [4. 開発の進め方](#4-開発の進め方)
+  - [4.1 開発開始（要件定義）](#41-開発開始要件定義)
+  - [4.2 開発サイクル](#42-開発サイクル)
+  - [4.3 人間の役割](#43-人間の役割)
+  - [4.4 軽微な変更](#44-軽微な変更)
+  - [4.5 機能の追加・仕様の変更・機能の削除（開発開始の後）](#45-機能の追加仕様の変更機能の削除開発開始の後)
+  - [4.6 リンター・フォーマッター](#46-リンターフォーマッター)
+  - [4.7 資料の更新ルール](#47-資料の更新ルール)
+  - [4.8 AI への資料の読ませ方](#48-ai-への資料の読ませ方)
+  - [4.9 外部サービスとの連携](#49-外部サービスとの連携)
+  - [4.10 hooks](#410-hooks)
+  - [4.11 権限](#411-権限)
+  - [4.12 Git の運用](#412-git-の運用)
+- [5. Claude とのやり取り](#5-claude-とのやり取り)
+
 ## 1. 概要
 
 Claude Code で開発を進めるための、言語に依存しない（Python や SQL などに依存しない）共通の開発環境です。
@@ -24,26 +60,118 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 | コード全体を整理し、資料どうしの齟齬を直す | `/refactor` | 2.8 |
 | リリースする（develop を main に入れる） | `/release` | 2.9 |
 | リリース済みの本番の不具合を急いで直す | `/quick-change hotfix <変更内容>` | 2.10 |
+| ハーネス（このテンプレート）の更新を取り込む | `npm run update-harness` | 2.11 |
 
 小さな変更かどうか迷ったら `/quick-change` から始めて構いません。条件（2.4）を満たさないと分かった時点で、Claude が変更要求に切り替えます（WF-16）。
 
 ### 2.1 共通の準備
 
-1. このテンプレートの中身を、開発するリポジトリの直下にコピーします（`.claude/`、`docs/`、`CLAUDE.md`、`.mcp.json`、`.gitignore`）。既存のリポジトリに入れる場合は、同名のファイルを上書きしないよう注意します。
-2. git リポジトリにし、`main` と `develop` を用意します（4.12）。テストの凍結、レビューの差分、承認用の差分リンクは git のコミットを使います。Claude は `main` と `develop` に直接コミットできない（hook が止める）ため、最初のコミットだけは人間が行います。
-   ```bash
-   git init -b main
-   git add -A && git commit -m "chore: テンプレートを導入"
-   git switch -c develop
-   ```
-3. GitHub を使う場合は、`gh` CLI を用意してリポジトリを作り、両方のブランチをプッシュして、既定ブランチを `develop` にします。リポジトリの設定で、マージ方式を「Create a merge commit」だけにし、マージ後のブランチの自動削除を有効にします。ルールセットが使えるプラン（公開リポジトリ、または Pro / Team 以上）なら、`main` と `develop` に「PR を必須」「強制プッシュの禁止」「削除の禁止」を設定し、CI を一度動かした後で、必須のステータスチェックに `ci` を加えます。CI（`.github/workflows/ci.yml`）は Actions が有効なら追加の設定なしで動きます（4.12）。
-   ```bash
-   gh repo create <名前> --private --source . --remote origin
-   git push -u origin main develop
-   gh repo edit --default-branch develop --enable-merge-commit --enable-squash-merge=false --enable-rebase-merge=false --delete-branch-on-merge
-   ```
-4. bash が使えることを確認します（Windows では Git Bash か WSL）。hooks と `.claude/scripts/` に必要です。
-5. `claude` を**リポジトリの直下で**、`develop` にいる状態で起動します。サブディレクトリで起動すると hooks が動きません（4.10）。初回は Context7（MCP サーバー）の使用を承認します。
+このリポジトリ（ハーネス）はそのまま使わず、**複製して開発用のリポジトリを作り、そこで開発します**。
+
+#### 0. 必要なツールを入れる
+
+| ツール | 版 | 何に使うか | 確かめ方 |
+|---|---|---|---|
+| Node.js | 22 以上 | `npm run` でリポジトリの作成と更新の取り込みを呼ぶ | `node -v` |
+| git | — | 版の管理。テストの凍結とレビューの差分にも使う | `git --version` |
+| jq | — | hooks が Claude Code からの入力を読む | `jq --version` |
+| Claude Code | — | 開発を進める AI | `claude --version` |
+| GitHub CLI（推奨） | — | リポジトリと PR の作成 | `gh auth status` |
+
+Ubuntu（Windows では WSL の Ubuntu）を前提にしています。bash は Ubuntu に入っています。
+
+**Windows のとき**：PowerShell を管理者として開いて `wsl --install` を実行し、再起動して Ubuntu を開きます。以降のコマンドはすべて Ubuntu の中で打ちます。作業フォルダは Ubuntu 側（`~/` の下）に置きます（`/mnt/c/...` は遅いため）。
+
+```sh
+# git と curl と jq
+sudo apt update && sudo apt install -y git curl jq
+
+# Node.js（nvm で入れる。nvm を入れたら、新しいターミナルを開いてから次の行）
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+nvm install 22
+
+# Claude Code
+curl -fsSL https://claude.ai/install.sh | bash
+
+# GitHub CLI（公式の apt リポジトリを足して入れる）
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update && sudo apt install -y gh
+gh auth login   # GitHub にログイン（表示に従ってブラウザで認証する）
+```
+
+入れたら、新しいターミナルを開き、表の「確かめ方」のコマンドで版が出ることを確かめます。GitHub CLI がなくても進められますが、リポジトリの作成と設定を手で行うことになります。開発するものの言語の実行環境（Python など）は、技術・環境の資料で決めてから別に入れます。
+
+#### 1. 開発用のリポジトリを作る
+
+```sh
+git clone https://github.com/GinjiHayashi/claude-code-template.git
+cd claude-code-template
+cp .env.sample .env        # .env を開いて書く（下の「.env の書き方」）
+npm run create-repo
+```
+
+##### .env の書き方
+
+書く項目は3つです。ふつうは `REPO` の1行だけを書きます。
+
+| 項目 | 必須か | 書くもの |
+|---|---|---|
+| `REPO` | 必須 | 作る開発用リポジトリ（`持ち主/リポジトリ名`） |
+| `REPO_DIR` | 任意 | 手元に clone する場所。空なら、このリポジトリの隣（`../<リポジトリ名>`） |
+| `HARNESS_REPO` | 任意 | 複製元のハーネス。空なら `GinjiHayashi/claude-code-template` |
+
+状況ごとの書き方：
+
+| こんなとき | 書くこと |
+|---|---|
+| 自分のアカウントに作る（ふつうはこれ） | `REPO=your-name/my-app` |
+| 組織（Organization）に作る | `REPO=your-org/my-app`（その組織でリポジトリを作る権限が要る） |
+| GitHub に空のリポジトリをもう作ってある | 同じく `REPO=持ち主/名前`。空なら、そのまま使う（中身があれば止まる） |
+| SSH で push したい | `REPO=git@github.com:your-name/my-app.git`。URL で書くと gh を使わないので、空のリポジトリを先に作り、最後に表示される設定を手で行う |
+| clone する場所を決めたい | `REPO_DIR=~/work/my-app`（`~/` はホームのフォルダ） |
+| ハーネスを自分のリポジトリに複製して直している | `HARNESS_REPO=your-name/claude-code-template` |
+
+例（自分のアカウント `taro` に `todo-app` を作り、`~/work` の下に置く）：
+
+```sh
+REPO=taro/todo-app
+REPO_DIR=~/work/todo-app
+HARNESS_REPO=
+```
+
+既定では非公開のリポジトリを作ります。公開にするときは `npm run create-repo -- --public` を実行します。先に中身だけ確かめたいときは、`npm run create-repo -- --dry-run` を実行します（何も作らず、することを表示するだけ）。
+
+これで GitHub にリポジトリができ、`REPO_DIR` の場所（既定はこのリポジトリの隣の `../my-app`）に clone されます。このあとの作業はすべてそちらで行います。最初に clone したこのリポジトリは消してかまいません。
+
+<details>
+<summary>スクリプトがしていること・gh がないとき</summary>
+
+- リポジトリを作る（すでにあれば、空であることと公開・非公開が指定どおりであることを確かめる。中身があれば止める）
+- ハーネスの `main` と `develop` を履歴ごと送る（作業ブランチは送らない。フォークは非公開にできないため複製する。GitHub Docs「Duplicating a repository」）
+- 既定ブランチを `develop` にし、マージ方式をマージコミットだけにし、マージ後のブランチの自動削除を有効にする
+- ルールセット `protect-main-develop` を作る（`main` と `develop` に PR 必須、強制プッシュ禁止、削除禁止、必須チェック `ci`）。非公開の Free プランでは作れないので、警告だけ出す
+- clone して、更新を取り込むための remote `harness` を足す
+
+gh がないときは、GitHub で空のリポジトリ（README やライセンスは付けない）を先に作ってから、`REPO` に URL を書いて実行し、最後に表示される設定（既定ブランチ、マージ方式、ルールセット）を Settings で行います。
+
+</details>
+
+#### 2. Claude Code を起動する
+
+```sh
+cd ../my-app               # REPO_DIR を書いたときは、その場所
+claude
+```
+
+`my-app` の直下で、`develop` にいる状態で起動します（サブディレクトリで起動すると hooks が動きません）。初回はログイン、フォルダを信頼するかの確認、Context7（MCP サーバー）の使用の承認が出ます。続けて 2.2 の `/kickoff` に進みます。
+
+<details>
+<summary>既存のリポジトリにハーネスを入れるとき</summary>
+
+`npm run create-repo` は使えません。`.claude/`、`docs/`、`.github/`、`CLAUDE.md`、`.mcp.json`、`.gitignore`、`package.json`、`.env.sample` をリポジトリの直下にコピーし（同名のファイルは上書きしないよう注意）、`main` と `develop` を用意して、上の「スクリプトがしていること」の設定を GitHub の画面で行います。この場合は 2.11 の更新の取り込みも使えません（ハーネスと履歴を共有しないため）。
+
+</details>
 
 ### 2.2 新しいプロジェクトを始める
 
@@ -171,6 +299,28 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 2. 承認パケットで**確認**します。
 3. Claude が `main` にマージしてタグとリリースノートを作り、同じ修正を `develop` にも入れます（GIT-61）。
 
+### 2.11 ハーネスの更新を取り込む
+
+**何のため**：`my-app` は、作った時点のハーネスの写しです。そのあとハーネス（このリポジトリ）に機能の追加や修正が入っても、`my-app` には自動では反映されません。この手順で、ハーネスの新しい版を `my-app` に取り込みます。`docs/project/` やコードはハーネスにないので、消えたり変わったりしません。
+
+**いつ**：ハーネスの `main` が新しくなったときです（ハーネスの更新は `main` に区切りよくまとめて入ります）。更新がなければ、実行しても何もしません。
+
+**やること**：`my-app` の中で実行し、できた PR をマージします。
+
+```sh
+npm run update-harness
+```
+
+スクリプトは次の順に進みます。
+
+1. ハーネスの最新の `main` を取ってくる
+2. `develop` から取り込み用のブランチ `feature/harness-update` を作り、そこにハーネスの `main` を merge する
+3. push して、`develop` への下書き PR を作る
+
+PR で変わったファイル（`.claude/` や `CLAUDE.md` など）を確かめ、**マージコミット** でマージします（GIT-23）。マージコミットが「どこまで取り込んだか」の印になり、次回はそれより後の更新だけが入ります。
+
+- 衝突したときは、スクリプトが途中で止まり、衝突したファイルと続け方を表示します。衝突するのは `CLAUDE.md`、`README.md`、`package.json`、`/kickoff` が書いた `ci.yml` の印の間などを `my-app` の側で直していたときだけです。
+
 ## 3. フォルダ・ファイル構成
 
 本 README は、リポジトリ全体の地図と開発の進め方の正本です。docs 内の資料の一覧は [`docs/README.md`](docs/README.md) を正本にします。
@@ -180,14 +330,16 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 ├── README.md                  # 本ファイル。環境の概要、構成、開発の進め方
 ├── CLAUDE.md                  # Claude が毎セッション読む指示。落とし穴と参照先ポインタのみ
 ├── .mcp.json                  # 共有する MCP サーバー。Context7（ライブラリの最新ドキュメント）のみ
-├── .gitignore                 # レビュー用の差分ファイル（.claude/review/）を除外
+├── .gitignore                 # レビュー用の差分ファイル（.claude/review/）と .env を除外
+├── package.json               # npm run create-repo / update-harness の入口だけ（依存パッケージはない）
+├── .env.sample                # npm run create-repo の設定のひな形（.env に写して書く）
 ├── .github/
 │   ├── pull_request_template.md  # PR 本文の形（GIT-21）
 │   └── workflows/ci.yml       # CI。下書きでない PR と main・develop へのプッシュで ci.sh を実行（GIT-24）
 ├── .claude/
 │   ├── settings.json          # 権限、hooks、応答言語（日本語）などの共有設定
 │   ├── hooks/                 # hook のスクリプト。session-start / freeze-guard / branch-guard / format と共通関数 lib.sh
-│   ├── scripts/               # task.sh（タスク記録の作成・更新）、branch.sh（作業ブランチ・下書き PR・差分リンク）、ci.sh（開発コマンドを順に実行する CI の確認）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定）。後の2つは読み取りのみ
+│   ├── scripts/               # task.sh（タスク記録の作成・更新）、branch.sh（作業ブランチ・下書き PR・差分リンク）、ci.sh（開発コマンドを順に実行する CI の確認）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定。この2つは読み取りのみ）、create-repo.sh（開発用のリポジトリを作る。`npm run create-repo`）、update-harness.sh（ハーネスの更新を取り込む PR を作る。`npm run update-harness`）
 │   ├── agents/                # サブエージェント定義。plan-reviewer / test-reviewer / code-reviewer、全体点検の code-auditor / docs-auditor（探索は組み込みの Explore）
 │   └── skills/                # 各フェーズの手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor /release
 └── docs/

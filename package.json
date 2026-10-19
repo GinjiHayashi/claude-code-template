@@ -1,0 +1,9 @@
+{
+  "name": "claude-code-template",
+  "private": true,
+  "description": "Claude Code 開発環境テンプレート（ハーネス）。scripts は README「1. 開発用のリポジトリを作る」「ハーネスの更新を取り込む」で使う",
+  "scripts": {
+    "create-repo": "bash .claude/scripts/create-repo.sh",
+    "update-harness": "bash .claude/scripts/update-harness.sh"
+  }
+}
