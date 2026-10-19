@@ -16,7 +16,8 @@
       "Bash(gh repo delete *)"
     ],
     "ask": [
-      "Bash(gh pr merge *)"
+      "Bash(gh pr merge *)",
+      "Bash(bash .claude/scripts/branch.sh merge*)"
     ],
     "allow": [
       "Bash(git push *)",

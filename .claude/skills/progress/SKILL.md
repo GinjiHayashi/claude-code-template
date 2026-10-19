@@ -6,7 +6,7 @@ allowed-tools: Bash(bash .claude/scripts/progress.sh), Read, Grep, Glob
 # 進捗の報告
 
 ## 準備
-1. この会話でまだ読んでいない（圧縮などで内容が残っていない場合を含む）ときだけ、`docs/guidelines/workflow.md`（WF-01、WF-17〜24）を読む。
+1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/workflow.md`（WF-01、WF-17〜24）を読む。
 
 ## 集計
 2. `bash .claude/scripts/progress.sh` を実行し、資料の status、REQ と DES の対応、DES の実装状況（WF-20）、TASK の一覧、未解決事項を得る。
