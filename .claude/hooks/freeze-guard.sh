@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse（Edit|Write|Bash）: 進行中 TASK の frozen_tests にあるファイルへの書き込みを止める（TEST-04）。
-# Bash はコマンド文字列で判定するため、典型的な書き込みの形だけを止める。残りは REV-24 で検出する。
+# Bash はコマンド文字列で判定するため、典型的な書き込みの形だけを止める。残りは REV-25 で検出する。
 set -u
 . "$(dirname "$0")/lib.sh"
 

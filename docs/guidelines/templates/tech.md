@@ -43,7 +43,7 @@ related: []
 （未記入）
 
 ## コメントの書式
-> 書くこと: 関数の説明の形式（例: Python は Google 形式の docstring、TypeScript は JSDoc）と、コメントの言語（日本語 / 英語）。CODE-22・27・28 はこの書式で書く。
+> 書くこと: 関数の説明の形式（例: Python は Google 形式の docstring、TypeScript は JSDoc）と、コメントの言語（日本語 / 英語）。CODE-24〜26 はこの書式で書く。
 
 （未記入）
 

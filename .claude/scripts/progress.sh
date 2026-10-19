@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # プロジェクトの進捗の材料（資料のフロントマターと TASK の記述）を集計して出力する。ファイルは変更しない。
-# 実装状況の判定は WF-20、次の作業の決め方は WF-22、点検の提案は WF-24、報告の形は /progress Skill が正本。
+# 実装状況の判定は WF-10、次の作業の決め方は WF-23、点検の提案は WF-25、報告の形は /progress Skill が正本。
 # 使い方:
 #   progress.sh
 set -u
@@ -101,7 +101,7 @@ print_tasks() {
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
 }
 
-# 実装順は要件定義と変更要求の TASK の「完了したこと」に書かれる（WF-17、WF-18）。
+# 実装順は要件定義と変更要求の TASK の「完了したこと」に書かれる（WF-03、WF-20）。
 print_order_sources() {
   local task title
   echo
@@ -127,7 +127,7 @@ print_open_issues() {
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
 }
 
-# WF-24 の判定材料: 最後に done になった点検の TASK と、その後に done になった実装の TASK の件数。
+# WF-25 の判定材料: 最後に done になった点検の TASK と、その後に done になった実装の TASK の件数。
 print_refactor_basis() {
   local task last_number=0 last_task="なし" number implemented=0 has_des id
   while IFS= read -r task; do
@@ -147,7 +147,7 @@ print_refactor_basis() {
     [ -n "$has_des" ] && implemented=$((implemented + 1))
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
   echo
-  echo "## プロジェクト全体の点検の材料（WF-24）"
+  echo "## プロジェクト全体の点検の材料（WF-25）"
   echo "- 最後に done になった点検の TASK: $last_task"
   echo "- 点検の後の実装（done の実装の TASK）: $implemented 件"
 }

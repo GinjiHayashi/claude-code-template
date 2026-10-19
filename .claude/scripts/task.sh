@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# タスク記録（docs/project/tasks/TASK-xxx-*.md）を作成・更新する。更新規則は DOC-10〜13、WF-08・09。
+# タスク記録（docs/project/tasks/TASK-xxx-*.md）を作成・更新する。更新規則は DOC-10〜13、WF-09・11。
 # 使い方:
 #   task.sh begin <ブランチ名|hotfix|-> <ファイル名> <タスク名> [関連ID ...]
 #       作業ブランチに入り（- なら今のブランチのまま）、TASK を作って in-progress にし、起点のコミットを作業ログに書いてコミットする（GIT-10 (1)）
@@ -8,7 +8,7 @@
 #   task.sh phase <TASK-ID> <現在のフェーズ> <次の一手>                    2つのセクションを上書きする
 #   task.sh log <TASK-ID> <フェーズ> <行ったことと結果>                    作業ログに1行追記する（DOC-11）
 #   task.sh freeze <TASK-ID> <テストファイルのパス>                         frozen_tests に追記する（TEST-04）
-#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID を追記する（WF-20）
+#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID を追記する（WF-10）
 set -eu
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
