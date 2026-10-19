@@ -26,10 +26,6 @@ document_of() {
   ls "$PROJECT_DIR/$folder/$1"-*.md 2>/dev/null | head -n 1
 }
 
-related_of() {
-  front_matter_value "$1" related | tr -d '[]' | tr ',' ' '
-}
-
 # test-items.md の見出し「## DES-xxx」の下にある表の項目番号を1行1件で返す。
 test_item_numbers_of() {
   [ -f "$TEST_ITEMS" ] || return 0

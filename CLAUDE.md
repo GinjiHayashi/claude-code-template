@@ -2,7 +2,7 @@
 
 ## このリポジトリについて
 - 目的と範囲は `docs/project/overview.md` を読む。
-- リポジトリ構成と開発の進め方は `README.md` を読む。
+- 開発の進め方は `docs/guidelines/workflow.md` に、各作業の手順は Skill（`.claude/skills/`）にある。`README.md` は人間向けの説明なので、作業のために読まなくてよい。
 
 ## セッション開始時
 - SessionStart hook が進行中の TASK を表示する。表示された TASK の「次の一手」にある Skill を読み込み、その手順から再開する（DOC-21）。質問の途中なら PLAN-27 に従う。
@@ -10,9 +10,8 @@
 
 ## タスクの進め方と記録
 - 作業は `docs/guidelines/workflow.md` のフェーズ（探索→計画→実装→レビュー）に従う。
-- TASK ファイルの作成と、状態・現在のフェーズ・次の一手・作業ログ・凍結の更新は `.claude/scripts/task.sh`（使い方はスクリプト冒頭）で行う。「完了したこと」「未解決事項」は Edit で更新する。
-- TASK ファイルの更新規則は DOC-10〜13（`docs/guidelines/documentation.md`）に従う。
-- ブランチ・コミット・プッシュ・PR・承認の依頼（承認パケット）は `docs/guidelines/git.md` に従う。作業ブランチの作成と下書き PR は `.claude/scripts/branch.sh` で行う。
+- TASK ファイルの作成と、状態・現在のフェーズ・次の一手・作業ログ・凍結の更新は `.claude/scripts/task.sh`（使い方はスクリプト冒頭）で行う。「完了したこと」「未解決事項」は Edit で更新する。更新規則は DOC-10〜13。
+- ブランチ・コミット・PR・承認の依頼（承認パケット）は `docs/guidelines/git.md` に従う。ブランチと PR の操作は `.claude/scripts/branch.sh` で行う。
 
 ## 作業前に読む資料
 - 作業の種類に応じて、`docs/README.md` の「いつ読むか」に載っている資料を読む。

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# 作業ブランチの作成、下書き PR の作成、承認用の差分リンクの出力を行う。規則は docs/guidelines/git.md（GIT-04・21・31・33・61）。
+# 作業ブランチの作成、PR の作成・下書きの解除・マージ、承認用の差分リンクの出力を行う。規則は docs/guidelines/git.md（GIT-04・21〜25・31・33・61）。
 # 使い方:
 #   branch.sh start <ブランチ名>           develop の最新から作業ブランチを切る（既にあれば切り替える）。起点のコミットを出力する
 #   branch.sh start hotfix                 main の最新のタグから hotfix/v<次のパッチ版> を切る
 #   branch.sh pr                           現在のブランチの PR がなければプッシュして下書き PR を作り、URL を出力する
-#   branch.sh link <起点のコミット>         起点から HEAD までの比較の URL を出力する（origin がなければ git diff --stat）
+#   branch.sh ready                        プッシュして PR の下書きを解除し、CI の結果を待つ（origin がなければ ci.sh を実行する）
+#   branch.sh merge                        CI の成功を確かめて PR をマージし、develop を最新にする（hotfix/ は main へ入れ、ブランチを残す。
+#                                          origin がなければ develop へ --no-ff でマージする）
+#   branch.sh link <起点のコミット>        起点から HEAD までの比較の URL を出力する（origin がなければ git diff --stat）
 #   branch.sh link --commit <コミット>      1つのコミットのページの URL を出力する
 set -eu
 
@@ -92,6 +95,54 @@ cmd_pr() {
   fi
 }
 
+# PR のチェックが報告されるまで待ってから、結果が出るまで待つ。失敗または報告なしなら 1 を返す。
+watch_checks() {
+  local branch="$1" i
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    gh pr checks "$branch" 2>&1 | grep -q 'no checks reported' || break
+    sleep 5
+  done
+  gh pr checks "$branch" --watch
+}
+
+cmd_ready() {
+  [ $# -eq 0 ] || fail "ready は引数を取らない"
+  local branch
+  branch=$(current_branch)
+  if ! has_origin; then
+    bash "$ROOT/.claude/scripts/ci.sh"
+    return
+  fi
+  cmd_pr
+  if [ "$(gh pr view "$branch" --json isDraft --jq .isDraft)" = true ]; then
+    gh pr ready "$branch"
+  fi
+  watch_checks "$branch" \
+    || fail "CI が失敗したか、チェックが報告されていない。失敗なら同じブランチで直す。報告されない（Actions が無効）なら ci.sh を手元で実行する（GIT-25）"
+}
+
+cmd_merge() {
+  [ $# -eq 0 ] || fail "merge は引数を取らない"
+  local branch base
+  branch=$(current_branch)
+  case "$branch" in main|develop) fail "$branch はマージ元にしない（GIT-02）" ;; hotfix/*) base=main ;; *) base=develop ;; esac
+  [ -z "$(git status --porcelain --untracked-files=no)" ] || fail "コミットしていない変更がある。コミットしてからマージする（GIT-10）"
+  if ! has_origin; then
+    git switch --quiet "$base"
+    git merge --no-ff "$branch"
+    return
+  fi
+  git push --quiet -u origin "$branch"
+  watch_checks "$branch" || fail "CI が成功していないためマージしない（GIT-25）"
+  case "$branch" in
+    hotfix/*) gh pr merge "$branch" --merge ;;
+    *) gh pr merge "$branch" --merge --delete-branch ;;
+  esac
+  git switch --quiet "$base"
+  git pull --quiet --ff-only
+  printf 'マージした: %s → %s\n' "$branch" "$base"
+}
+
 cmd_link() {
   local sha
   if [ "${1-}" = "--commit" ]; then
@@ -112,11 +163,13 @@ cmd_link() {
   printf '%s/compare/%s..%s\n' "$(web_url)" "$(git rev-parse --short=12 "$sha")" "$(git rev-parse --short=12 HEAD)"
 }
 
-[ $# -ge 1 ] || fail "サブコマンド（start / pr / link）を指定する"
+[ $# -ge 1 ] || fail "サブコマンド（start / pr / ready / merge / link）を指定する"
 sub="$1"; shift
 case "$sub" in
   start) cmd_start "$@" ;;
   pr) cmd_pr "$@" ;;
+  ready) cmd_ready "$@" ;;
+  merge) cmd_merge "$@" ;;
   link) cmd_link "$@" ;;
   *) fail "不明なサブコマンド: $sub" ;;
 esac
