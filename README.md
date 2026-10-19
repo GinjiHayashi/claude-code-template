@@ -24,26 +24,94 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 | コード全体を整理し、資料どうしの齟齬を直す | `/refactor` | 2.8 |
 | リリースする（develop を main に入れる） | `/release` | 2.9 |
 | リリース済みの本番の不具合を急いで直す | `/quick-change hotfix <変更内容>` | 2.10 |
+| テンプレートの更新を取り込む | `bash .claude/scripts/update-template.sh` | 2.11 |
 
 小さな変更かどうか迷ったら `/quick-change` から始めて構いません。条件（2.4）を満たさないと分かった時点で、Claude が変更要求に切り替えます（WF-16）。
 
 ### 2.1 共通の準備
 
-1. このテンプレートの中身を、開発するリポジトリの直下にコピーします（`.claude/`、`docs/`、`CLAUDE.md`、`.mcp.json`、`.gitignore`）。既存のリポジトリに入れる場合は、同名のファイルを上書きしないよう注意します。
-2. git リポジトリにし、`main` と `develop` を用意します（4.12）。テストの凍結、レビューの差分、承認用の差分リンクは git のコミットを使います。Claude は `main` と `develop` に直接コミットできない（hook が止める）ため、最初のコミットだけは人間が行います。
-   ```bash
-   git init -b main
-   git add -A && git commit -m "chore: テンプレートを導入"
-   git switch -c develop
-   ```
-3. GitHub を使う場合は、`gh` CLI を用意してリポジトリを作り、両方のブランチをプッシュして、既定ブランチを `develop` にします。リポジトリの設定で、マージ方式を「Create a merge commit」だけにし、マージ後のブランチの自動削除を有効にします。ルールセットが使えるプラン（公開リポジトリ、または Pro / Team 以上）なら、`main` と `develop` に「PR を必須」「強制プッシュの禁止」「削除の禁止」を設定し、CI を一度動かした後で、必須のステータスチェックに `ci` を加えます。CI（`.github/workflows/ci.yml`）は Actions が有効なら追加の設定なしで動きます（4.12）。
-   ```bash
-   gh repo create <名前> --private --source . --remote origin
-   git push -u origin main develop
-   gh repo edit --default-branch develop --enable-merge-commit --enable-squash-merge=false --enable-rebase-merge=false --delete-branch-on-merge
-   ```
-4. bash が使えることを確認します（Windows では Git Bash か WSL）。hooks と `.claude/scripts/` に必要です。
-5. `claude` を**リポジトリの直下で**、`develop` にいる状態で起動します。サブディレクトリで起動すると hooks が動きません（4.10）。初回は Context7（MCP サーバー）の使用を承認します。
+このテンプレートはそのまま使わず、**複製して開発用のリポジトリを作り、そこで開発します**。
+
+#### 0. 必要なツールを入れる
+
+| ツール | 何に使うか | 確かめ方 |
+|---|---|---|
+| git | 版の管理。テストの凍結とレビューの差分にも使う | `git --version` |
+| bash | hooks と `.claude/scripts/` | `bash --version` |
+| jq | hooks が Claude Code からの入力を読む | `jq --version` |
+| Claude Code | 開発を進める AI | `claude --version` |
+| GitHub CLI（推奨） | リポジトリの作成と設定、PR | `gh auth status` |
+
+Ubuntu（Windows では WSL の Ubuntu）を前提にしています。
+
+**Windows のとき**: PowerShell を管理者として開いて `wsl --install` を実行し、再起動して Ubuntu を開きます。以降のコマンドはすべて Ubuntu の中で打ちます。作業フォルダは Ubuntu 側（`~/` の下）に置きます（`/mnt/c/...` は遅いため）。
+
+```sh
+sudo apt update && sudo apt install -y git curl jq
+
+# Claude Code
+curl -fsSL https://claude.ai/install.sh | bash
+
+# GitHub CLI（公式の apt リポジトリを足して入れる）
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update && sudo apt install -y gh
+gh auth login
+```
+
+言語の実行環境（Node.js、Python など）は、開発するものに合わせて別に入れます（技術・環境の資料で決めます）。
+
+#### 1. 開発用のリポジトリを作る
+
+```sh
+git clone https://github.com/GinjiHayashi/claude-code-template.git
+cd claude-code-template
+bash .claude/scripts/create-repo.sh your-name/my-app
+```
+
+| 指定 | 必須か | 内容 |
+|---|---|---|
+| `owner/name` | 必須 | 作るリポジトリ |
+| `--dir <場所>` | 任意 | 手元に clone する場所。既定はこのフォルダの隣（`../my-app`） |
+| `--public` | 任意 | 公開リポジトリにする。既定は非公開 |
+| `--dry-run` | 任意 | 何も作らず、することを表示するだけ |
+
+| こんなとき | すること |
+|---|---|
+| 自分のアカウントに作る（ふつうはこれ） | `create-repo.sh your-name/my-app` |
+| 組織に作る | `create-repo.sh your-org/my-app`（その組織でリポジトリを作る権限が要る） |
+| GitHub に空のリポジトリをもう作ってある | 同じ指定でよい。空ならそのまま使う（中身があれば止まる） |
+| gh を使わない | GitHub で空のリポジトリを先に作り、`create-repo.sh https://github.com/your-name/my-app.git`。最後に表示される設定を画面で行う |
+| 自分のフォークをテンプレートにしている | `TEMPLATE_REPO=your-name/claude-code-template bash .claude/scripts/create-repo.sh …` |
+
+これで GitHub にリポジトリができ、`../my-app` に clone されます。このあとの作業はすべてそちらで行います。最初に clone したテンプレートは消してかまいません。
+
+<details>
+<summary>スクリプトがしていること</summary>
+
+- リポジトリを作る（すでにあれば空であることを確かめる。中身があれば止める）
+- テンプレートの `main` と `develop` を履歴ごと送る（作業ブランチは送らない）
+- 既定ブランチを `develop` にし、マージ方式をマージコミットだけにし、マージ後のブランチの自動削除を有効にする
+- ルールセット `protect-main-develop` を作る（`main` と `develop` に PR 必須、強制プッシュ禁止、削除禁止、必須チェック `ci`）。非公開の Free プランでは作れないので、警告だけ出す
+- clone して、更新を取り込むための remote `template` を足す
+
+</details>
+
+#### 2. Claude Code を起動する
+
+```sh
+cd ../my-app
+claude
+```
+
+**リポジトリの直下で**、`develop` にいる状態で起動します。サブディレクトリで起動すると hooks が動きません。初回はログイン、フォルダを信頼するかの確認、Context7（MCP サーバー）の使用の承認が出ます。続けて 2.2 の `/kickoff` に進みます。
+
+<details>
+<summary>既存のリポジトリにテンプレートを入れるとき</summary>
+
+スクリプトは使えません。`.claude/`、`docs/`、`.github/`、`CLAUDE.md`、`.mcp.json`、`.gitignore` をリポジトリの直下にコピーし（同名のファイルは上書きしないよう注意）、`main` と `develop` を用意して、上の「スクリプトがしていること」の設定を GitHub の画面で行います。この場合は 2.11 の更新の取り込みも使えません（テンプレートと履歴を共有しないため）。
+
+</details>
 
 ### 2.2 新しいプロジェクトを始める
 
@@ -171,6 +239,25 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 2. 承認パケットで**確認**します。
 3. Claude が `main` にマージしてタグとリリースノートを作り、同じ修正を `develop` にも入れます（GIT-61）。
 
+### 2.11 テンプレートの更新を取り込む
+
+**何のため**: 作ったリポジトリは、作った時点のテンプレートの写しです。そのあとテンプレートに入った追加や修正は、自動では反映されません。この手順で、テンプレートの新しい版を取り込みます。`docs/project/` やコードはテンプレートにないので、消えたり変わったりしません。
+
+**いつ**: テンプレートの `main` が新しくなったときです。更新がなければ、実行しても何もしません。
+
+**やること**: 作ったリポジトリの直下で、`develop` にいる状態で実行し、できた PR を確かめてマージします。
+
+```sh
+bash .claude/scripts/update-template.sh
+```
+
+1. テンプレートの最新の `main` を取ってくる（remote `template`）
+2. `develop` から `feature/template-update` を作り、テンプレートの `main` をマージコミットで取り込む
+3. プッシュして、`develop` への下書き PR を作る
+
+- 衝突したときは、スクリプトが止まり、衝突したファイルと続け方を表示します。衝突するのは、テンプレートとこのリポジトリの両方で同じ箇所を変えたときだけです（`CLAUDE.md`、`README.md`、`/kickoff` が書いた `ci.yml` の印の間など）。
+- PR は、ほかの作業と同じくマージコミットでマージします（GIT-23）。マージコミットが「どこまで取り込んだか」の印になり、次回はそれより後の更新だけが入ります。
+
 ## 3. フォルダ・ファイル構成
 
 本 README は、リポジトリ全体の地図と開発の進め方の正本です。docs 内の資料の一覧は [`docs/README.md`](docs/README.md) を正本にします。
@@ -187,7 +274,7 @@ Claude Code で開発を進めるための、言語に依存しない（Python �
 ├── .claude/
 │   ├── settings.json          # 権限、hooks、応答言語（日本語）などの共有設定
 │   ├── hooks/                 # hook のスクリプト。session-start / freeze-guard / branch-guard / format と共通関数 lib.sh
-│   ├── scripts/               # task.sh（タスク記録の作成・更新）、branch.sh（作業ブランチ・下書き PR・差分リンク）、ci.sh（開発コマンドを順に実行する CI の確認）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定）。後の2つは読み取りのみ
+│   ├── scripts/               # task.sh（タスク記録の作成・更新）、branch.sh（作業ブランチ・下書き PR・差分リンク）、ci.sh（開発コマンドを順に実行する CI の確認）、progress.sh（進捗の集計）、audit.sh（全体点検の機械判定。この2つは読み取りのみ）、create-repo.sh（テンプレートから開発用のリポジトリを作る）、update-template.sh（テンプレートの更新を取り込む PR を作る）
 │   ├── agents/                # サブエージェント定義。plan-reviewer / test-reviewer / code-reviewer、全体点検の code-auditor / docs-auditor（探索は組み込みの Explore）
 │   └── skills/                # 各フェーズの手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor /release
 └── docs/
