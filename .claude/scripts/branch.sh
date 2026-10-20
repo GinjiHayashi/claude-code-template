@@ -9,6 +9,7 @@
 #   branch.sh ready                        プッシュして PR の下書きを解除し、HEAD の CI の結果を待つ（origin がなければ ci.sh を実行する）
 #   branch.sh merge                        HEAD の CI の成功を確かめて PR をマージし、develop を最新にする（hotfix/ は main へ入れ、ブランチを残す。
 #                                          CI の取り消しは1回だけ再実行し、GitHub の一時的な失敗（5xx）のマージは3回まで試す。
+#                                          --local-ci なら CI の代わりに手元で ci.sh を実行する。CI 基盤の障害のときだけ使う（GIT-26）。
 #                                          origin がなければ develop へ --no-ff でマージする）
 #   branch.sh link <起点のコミット>        起点から HEAD までの比較の URL を出力する（origin がなければ git diff --stat）
 #   branch.sh link --commit <コミット>      1つのコミットのページの URL を出力する
@@ -193,8 +194,8 @@ cmd_ready() {
 }
 
 cmd_merge() {
-  [ $# -eq 0 ] || fail "merge は引数を取らない"
-  local branch base number
+  local local_ci="" branch base number
+  case "$*" in "") ;; --local-ci) local_ci=1 ;; *) fail "merge [--local-ci]" ;; esac
   branch=$(current_branch)
   case "$branch" in main|develop) fail "$branch はマージ元にしない（GIT-02）" ;; hotfix/*) base=main ;; *) base=develop ;; esac
   [ -z "$(git status --porcelain --untracked-files=no)" ] || fail "コミットしていない変更がある。コミットしてからマージする（GIT-10）"
@@ -205,7 +206,13 @@ cmd_merge() {
   fi
   git push --quiet -u origin "$branch"
   number=$(require_open_pr "$branch")
-  watch_checks "$(git rev-parse HEAD)" || fail "CI が成功していないためマージしない（GIT-25）"
+  if [ -n "$local_ci" ]; then
+    # CI 基盤の障害で CI が動かないときだけ使う。ユーザーの承認と TASK への記録は呼ぶ側で行う（GIT-26）。
+    bash "$ROOT/.claude/scripts/ci.sh" || fail "手元の ci.sh が失敗したためマージしない（GIT-26）"
+    echo "branch.sh: 手元の ci.sh の成功で CI に代えてマージする（GIT-26）。マージ後に $base の CI の結果を確かめる" >&2
+  else
+    watch_checks "$(git rev-parse HEAD)" || fail "CI が成功していないためマージしない（GIT-25）"
+  fi
   case "$branch" in
     hotfix/*) merge_pr "$number" ;;
     *) merge_pr "$number" --delete-branch ;;
