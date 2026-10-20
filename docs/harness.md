@@ -147,7 +147,7 @@ HARNESS_REPO=
 <summary>スクリプトがしていること・gh がないとき</summary>
 
 - リポジトリを作る（すでにあれば、空であることと公開・非公開が指定どおりであることを確かめる。中身があれば止める）
-- ハーネスの `main` と `develop` を履歴ごと送る（作業ブランチは送らない。フォークは非公開にできないため複製する。GitHub Docs「Duplicating a repository」）
+- ハーネスの `main` と `develop` を履歴ごと送る（作業ブランチは送らない。フォークは非公開にできないため複製する。GitHub Docs「Duplicating a repository」）。`main` には、ハーネスの開発時の `develop` → `main` のマージコミットが `develop` にない形で残ります。中身の差分はないので、そのままで構いません（`/release` もこれを未マージとは扱いません）
 - 既定ブランチを `develop` にし、マージ方式をマージコミットだけにし、マージ後のブランチの自動削除を有効にする
 - ルールセット `protect-main-develop` を作る（`main` と `develop` に PR 必須、強制プッシュ禁止、削除禁止、必須チェック `ci`）。非公開の Free プランでは作れないので、警告だけ出す
 - clone して、更新を取り込むための remote `harness` を足す
