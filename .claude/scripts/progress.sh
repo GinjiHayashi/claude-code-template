@@ -117,18 +117,48 @@ print_open_issues() {
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
 }
 
-# WF-25 の判定材料: 最後に done になった点検の TASK と、その後に done になった実装の TASK の件数。
-print_refactor_basis() {
-  local task last_number=0 last_task="なし" number implemented=0 has_des id
+# TASK のファイルの番号を数で返す。
+task_number_of() {
+  printf '%s' $((10#$(basename "$1" | sed 's/^TASK-\([0-9]*\)-.*/\1/')))
+}
+
+# 最後に done になった点検（題名が「リファクタリング」）の TASK のファイルを返す。なければ空。
+last_refactor_task() {
+  local task last=""
   while IFS= read -r task; do
     [ "$(front_matter_value "$task" status)" = "done" ] || continue
-    case "$(title_of "$task")" in
-      *" リファクタリング") last_task=$(to_relative "$task"); last_number=$((10#$(basename "$task" | sed 's/^TASK-\([0-9]*\)-.*/\1/'))) ;;
-    esac
+    case "$(title_of "$task")" in *" リファクタリング") last="$task" ;; esac
   done < <(documents_in "$PROJECT_DIR/tasks" TASK)
+  printf '%s' "$last"
+}
+
+# 最後の点検とその後に done になった TASK の「未解決事項」（レビューで残した P2 など。REV-11）。次の点検の材料にする。
+print_left_issues() {
+  local task last last_number=0 issues
+  last=$(last_refactor_task)
+  [ -n "$last" ] && last_number=$(task_number_of "$last")
+  echo
+  echo "## 残した P2 など（最後の点検とその後の done の TASK の未解決事項）"
   while IFS= read -r task; do
-    number=$((10#$(basename "$task" | sed 's/^TASK-\([0-9]*\)-.*/\1/')))
-    [ "$number" -gt "$last_number" ] || continue
+    [ "$(task_number_of "$task")" -ge "$last_number" ] || continue
+    [ "$(front_matter_value "$task" status)" = "done" ] || continue
+    issues=$(section_of "$task" "## 未解決事項" | grep -v '^（なし）$')
+    [ -n "$issues" ] || continue
+    echo "- $(to_relative "$task")"
+    printf '%s\n' "$issues" | sed 's/^/  /'
+  done < <(documents_in "$PROJECT_DIR/tasks" TASK)
+}
+
+# WF-25 の判定材料: 最後に done になった点検の TASK と、その後に done になった実装の TASK の件数。
+print_refactor_basis() {
+  local task last last_number=0 last_task="なし" implemented=0 has_des id
+  last=$(last_refactor_task)
+  if [ -n "$last" ]; then
+    last_task=$(to_relative "$last")
+    last_number=$(task_number_of "$last")
+  fi
+  while IFS= read -r task; do
+    [ "$(task_number_of "$task")" -gt "$last_number" ] || continue
     [ "$(front_matter_value "$task" status)" = "done" ] || continue
     has_des=""
     for id in $(related_of "$task"); do
@@ -148,4 +178,5 @@ print_requirements
 print_tasks
 print_order_sources
 print_open_issues
+print_left_issues
 print_refactor_basis

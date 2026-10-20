@@ -23,4 +23,4 @@
 
 - [ ] （TEST-13 の項目。ない場合は「なし」）
 
-<!-- 規則: docs/guidelines/git.md（GIT-21・22）。進捗は PR に書かない（正本は TASK）。 -->
+<!-- 規則: docs/guidelines/git.md（GIT-21・22）。進捗は PR に書かない（正本は TASK）。「含まれる作業」「レビュー」は branch.sh pr-body で作る。 -->
