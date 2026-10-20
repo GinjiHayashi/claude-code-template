@@ -9,8 +9,6 @@ set -u
 DOCS_DIR="$ROOT/docs"
 PROJECT_DIR="$DOCS_DIR/project"
 TEST_ITEMS="$PROJECT_DIR/test-items.md"
-# テストの説明を探すときに除くフォルダ（資料、設定、生成物、依存ライブラリ）。Markdown のファイルも除く。
-EXCLUDED_DIRS=".git docs .claude node_modules vendor dist build target .venv"
 
 # 指摘を1行出力する（番号は最後に振る）。引数: 観点 根拠ルール 場所 問題 修正案
 finding() {
