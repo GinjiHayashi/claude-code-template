@@ -2,7 +2,7 @@
 # タスク記録（docs/project/tasks/TASK-xxx-*.md）を作成・更新する。更新規則は DOC-10〜13、WF-09・11。
 # 使い方:
 #   task.sh begin [--next <次の一手>] <ブランチ名|hotfix|-> <ファイル名> <タスク名> [関連ID ...]
-#       作業ブランチに入り（- なら今のブランチのまま）、TASK を作って in-progress にし、起点のコミットを作業ログに書いてコミットする（GIT-10 (1)）。
+#       作業ブランチに入り（- なら今のブランチのまま）、TASK を作って in-progress にし、起点のコミットを作業ログに書く。
 #       「現在のフェーズ」は「探索」、「次の一手」は --next の値（省くと「<タスク名> の探索を始める」）にする（DOC-14）
 #   task.sh new <ファイル名（英語のケバブケース）> <タスク名> [関連ID ...]   新しい TASK を作り、パスを出力する（番号は全ブランチの最大＋1）。
 #       「現在のフェーズ」は「未着手」、「次の一手」は関連 ID から決まる Skill（DES があれば /implement-tdd、REQ だけなら /plan-spec）にする
@@ -11,6 +11,7 @@
 #   task.sh log <TASK-ID> <フェーズ> <行ったことと結果>                    作業ログに1行追記する（DOC-11）
 #   task.sh freeze <TASK-ID> <テストファイルのパス>                         frozen_tests に追記する（TEST-04）
 #   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID か、出所の TASK の ID を追記する（WF-10）
+# どのサブコマンドもコミットしない。TASK の変更は、次のコミット（テスト、実装、レビューの後など）に含める（GIT-10）。
 set -eu
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
@@ -123,9 +124,7 @@ cmd_begin() {
   cmd_status "$id" in-progress
   cmd_phase "$id" 探索 "$next"
   cmd_log "$id" 開始 "起点のコミット $base"
-  git -C "$ROOT" add "$file"
-  git -C "$ROOT" commit --quiet -m "chore($id): TASK を作成" -m "Refs: $id"
-  printf 'TASK: %s\nブランチ: %s\n起点のコミット: %s\n' "$file" "$branch" "$base"
+  printf 'TASK: %s（次のコミットに含める。GIT-10）\nブランチ: %s\n起点のコミット: %s\n' "$file" "$branch" "$base"
 }
 
 cmd_status() {

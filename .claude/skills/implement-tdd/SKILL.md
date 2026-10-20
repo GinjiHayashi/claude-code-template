@@ -10,7 +10,7 @@ argument-hint: "<DES-ID>"
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/testing.md`、`docs/guidelines/coding.md`、`docs/guidelines/git.md` を読む。
 2. 対象の DES、対応する REQ、`docs/project/test-items.md` の対象 DES の見出し、`docs/project/architecture.md`、`docs/project/tech.md` を読む。
-3. 変更のブランチ（`feature/change-`）にいなければ `bash .claude/scripts/branch.sh start feature/REQ-xxx-<名前>` で対象 REQ のブランチに入る。対象 DES の TASK を `task.sh status <TASK-ID> in-progress` にしてコミットする。
+3. 変更のブランチ（`feature/change-`）にいなければ `bash .claude/scripts/branch.sh start feature/REQ-xxx-<名前>` で対象 REQ のブランチに入る。対象 DES の TASK を `task.sh status <TASK-ID> in-progress` にする（コミットは 8 で行う。GIT-10）。
    - 振る舞いを削除するだけの DES（TEST-10）は 4〜9 を省き、「既存の振る舞いへの影響」に挙げたテストとコードを削除して 11 に進む。完了時に DES を `retired` にし、test-items.md の見出しに `（retired）` を付ける（PLAN-24）。
 
 ## テストとスタブ
@@ -22,12 +22,12 @@ argument-hint: "<DES-ID>"
 
 ## テストのレビューと凍結
 7. `/review-loop test <テストファイル>` でレビューする。テストを直したら 6 からやり直す。
-8. 合格したらテストファイルだけをコミットする（例: `test(DES-xxx): <要約>`）。
-9. `task.sh freeze` で凍結し、`task.sh log` で凍結コミットのハッシュを書く。以後、hook がテストの編集を止める。
+8. 合格したらテストファイルと TASK をコミットする（例: `test(DES-xxx): <要約>`）。実装のファイル（スタブを含む）は含めない。
+9. `task.sh freeze` で凍結し、`task.sh log` で凍結コミットのハッシュを書く（コミットは 11 で行う）。以後、hook がテストの編集を止める。
 
 ## Green と Refactor
 10. 対象の DES のテストファイルが成功するように実装する。実行するのは「テスト（1ファイル指定）」だけにする（TEST-06）。テストが誤っていると判断したら止めて報告する（TEST-05）。
-11. 対象のテストファイル、リント、フォーマット、ビルドをすべて成功させ、コミットする。
+11. 対象のテストファイル、リント、フォーマット、ビルドをすべて成功させ、実装と TASK（凍結の記録と Green のログ）をコミットする。
 12. 振る舞いを変えずに整理し、変更のたびに対象のテストファイルを実行する。整理を終えたら「テスト（全件）」を1回だけ実行し、既存のテストを含めて成功させてからコミットする（TEST-07・08）。
 
 ## コードのレビュー
