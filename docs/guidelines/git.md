@@ -1,6 +1,6 @@
 ---
 status: final
-updated: 2026-10-19
+updated: 2026-10-20
 related: []
 ---
 # Git の運用
@@ -14,6 +14,7 @@ related: []
 - **GIT-03** 作業ブランチと TASK の単位は次の表のとおりとする。1本のブランチに複数の TASK が入る
 - **GIT-04** 作業ブランチは `develop` の最新から切る（hotfix だけ `main` の最新のタグから）。`hotfix/` 以外の作業ブランチは同時に1本だけにする。変更のブランチ（`feature/change-`）で作業している間は、その範囲の設計・実装のためにブランチを切り替えない
 - **GIT-05** マージした作業ブランチは削除する
+- **GIT-06** マージ済みの作業ブランチと同じ名前のブランチは再利用しない（`branch.sh start` が止める）。中断した作業の再開のため、マージされていない同名のブランチは再利用する。日付を名前に使うブランチ（`feature/refactor-<YYYYMMDD>`）は、同じ名前のブランチ（ローカル・origin）があれば、`-2`・`-3` の連番を付けた名前にする
 
 GIT-03 の表:
 
@@ -23,7 +24,7 @@ GIT-03 の表:
 | 1要件の設計と、その全 DES の実装 | 設計で1つ、DES ごとに1つ | `feature/REQ-xxx-<REQ のファイル名の名前部分>` | その REQ の `final` の DES がすべて実装済み（WF-10 の `done`） |
 | 変更要求（計画から全実装まで） | 計画で1つ、設計・実装は上の行と同じ | `feature/change-<TASK のファイル名>` | 変更要求の TASK の `related` にある REQ の `final` の DES がすべて `done` |
 | 軽微な変更 | 1件で1つ | `feature/change-<TASK のファイル名>`（変更要求に切り替えたら同じブランチで続ける） | 完了時の確認（WF-18） |
-| プロジェクト全体の点検 | 1回で1つ | `feature/refactor-<YYYYMMDD>` | 完了時の確認 |
+| プロジェクト全体の点検 | 1回で1つ | `feature/refactor-<YYYYMMDD>`（同じ日の2回目からは `-2`・`-3`。GIT-06） | 完了時の確認 |
 | 本番の緊急修正 | 1件で1つ | `hotfix/v<次のパッチ版>` | 完了時の確認（GIT-61） |
 | ハーネス（このテンプレート）の更新の取り込み | 作らない | `feature/harness-update`（`npm run update-harness` が切る） | 取り込んだ差分の確認 |
 
@@ -47,8 +48,9 @@ GIT-03 の表:
 - **GIT-21** 作業ブランチの最初のプッシュで、下書き PR を作る（向き先は `develop`、`hotfix/` は `main`）。本文は `.github/pull_request_template.md` の形にする。進捗は PR に書かない（正本は TASK。WF-22）
 - **GIT-22** 作業ブランチの範囲（GIT-03 の表）の最後の承認・確認を依頼する前に、PR 本文を最新にして下書きを解除する
 - **GIT-23** PR はマージコミットでマージする（squash と rebase は使わない）。マージは承認・確認を得てから行う
-- **GIT-24** CI（`.github/workflows/ci.yml`）は、下書きでない PR と `main`・`develop` へのプッシュで、tech.md の開発コマンドを `ci.sh` で実行する。下書きでは動かさない（凍結コミットは意図的にテストが失敗するため）
+- **GIT-24** CI（`.github/workflows/ci.yml`）は、下書きでない PR と `main`・`develop` へのプッシュで、tech.md の開発コマンドを `ci.sh` で実行する。下書きでは動かさない（凍結コミットは意図的にテストが失敗するため）。プッシュで変わったのが TASK の記録（`docs/project/tasks/`）だけで、前のコミットの CI が成功していれば、開発コマンドを飛ばして成功にする
 - **GIT-25** 承認を依頼する前と PR をマージする直前に、CI の成功を確かめる。失敗したら同じブランチで直して、成功するまで繰り返す。CI が動かない（Actions が無効、`origin` がない）場合は、手元の `ci.sh` の結果で代える
+- **GIT-26** CI 基盤の障害（GitHub Actions の実行が queued のまま進まない、GitHub の障害など）で CI の結果が得られないときは、ユーザーに状況を伝えて承認を得てから、`branch.sh merge --local-ci`（手元の `ci.sh` の成功を条件にマージする）でマージし、TASK の作業ログに理由を記録する。マージ後、CI が動くようになったら `develop`（hotfix は `main`）の CI の結果を確かめ、失敗していれば `/quick-change` で直す。ルールセットの必須チェックでマージが拒否されたら、ユーザーに伝えて止まる
 
 ## 承認・確認の依頼
 

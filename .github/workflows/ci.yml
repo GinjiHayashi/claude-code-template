@@ -10,9 +10,12 @@ on:
 
 permissions:
   contents: read
+  # TASK の記録だけの変更のとき、前のコミットの CI の結果を読む
+  checks: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # 下書きのときの実行（ジョブを飛ばす）は別のグループにし、下書きの解除の実行を取り消さない
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.draft && 'draft' || 'run' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -22,12 +25,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # プッシュで変わったのが TASK の記録（docs/project/tasks/）だけで、前のコミットの CI が成功していれば、
+      # 開発コマンドを飛ばして成功にする。ジョブ自体は動かすので、必須チェック ci は報告される
+      - name: TASK の記録だけの変更かを判定する
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          skip=false
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            files=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$AFTER" --jq '.files[].filename') || files=""
+            if [ -n "$files" ] && ! printf '%s\n' "$files" | grep -qv '^docs/project/tasks/'; then
+              passed=$(gh api "repos/$GITHUB_REPOSITORY/commits/$BEFORE/check-runs?check_name=ci" \
+                --jq '[.check_runs[].conclusion] | index("success") != null') || passed=false
+              if [ "$passed" = true ]; then skip=true; fi
+            fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          if [ "$skip" = true ]; then echo "::notice::TASK の記録だけの変更のため、開発コマンドを飛ばす"; fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.scope.outputs.skip != 'true'
 
       # --- 言語の実行環境の準備（ここから）---
       # /kickoff で tech.md の「言語・バージョン」から書く（GIT-24）。準備が要らなければ「不要」と書く。
+      # 書いた step には `if: steps.scope.outputs.skip != 'true'` を付ける。
       # （未記入）
       # --- 言語の実行環境の準備（ここまで）---
 
       - name: 開発コマンドの実行
+        if: steps.scope.outputs.skip != 'true'
         run: bash .claude/scripts/ci.sh
