@@ -4,7 +4,8 @@
 #   branch.sh start <ブランチ名>           develop の最新から作業ブランチを切る（マージされていない同名のブランチがあれば切り替え、
 #                                          マージ済みなら止める。GIT-06）。起点のコミットを出力する
 #   branch.sh start hotfix                 main の最新のタグから hotfix/v<次のパッチ版> を切る
-#   branch.sh pr                           現在のブランチの PR がなければプッシュして下書き PR を作り、URL を出力する
+#   branch.sh pr                           プッシュし、現在のブランチの開いている PR がなければ下書き PR を作って、URL を出力する
+#                                          （同名のブランチのマージ済み PR は対象にしない。ready・merge も開いている PR を対象にする）
 #   branch.sh ready                        プッシュして PR の下書きを解除し、CI の結果を待つ（origin がなければ ci.sh を実行する）
 #   branch.sh merge                        CI の成功を確かめて PR をマージし、develop を最新にする（hotfix/ は main へ入れ、ブランチを残す。
 #                                          origin がなければ develop へ --no-ff でマージする）
@@ -88,9 +89,22 @@ cmd_start() {
   printf 'ブランチ: %s\n起点のコミット: %s\n' "$name" "$(git rev-parse --short=12 HEAD)"
 }
 
+# ブランチの開いている PR の番号を返す。なければ空。同名のブランチのマージ済み・閉じた PR は対象にしない。
+open_pr() {
+  gh pr list --head "$1" --state open --json number --jq '.[0].number // empty'
+}
+
+# 現在のブランチの開いている PR の番号を返す。なければ止める。
+require_open_pr() {
+  local number
+  number=$(open_pr "$1")
+  [ -n "$number" ] || fail "$1 の開いている PR がない。branch.sh pr で作る"
+  printf '%s' "$number"
+}
+
 cmd_pr() {
   [ $# -eq 0 ] || fail "pr は引数を取らない"
-  local branch base url
+  local branch base number
   branch=$(current_branch)
   case "$branch" in main|develop) fail "$branch では PR を作らない（GIT-02）" ;; esac
   if ! has_origin; then
@@ -98,8 +112,9 @@ cmd_pr() {
     return 0
   fi
   git push --quiet -u origin "$branch"
-  if url=$(gh pr view "$branch" --json url --jq .url 2>/dev/null); then
-    printf '%s\n' "$url"
+  number=$(open_pr "$branch")
+  if [ -n "$number" ]; then
+    gh pr view "$number" --json url --jq .url
     return 0
   fi
   case "$branch" in hotfix/*) base=main ;; *) base=develop ;; esac
@@ -112,33 +127,34 @@ cmd_pr() {
 
 # PR のチェックが報告されるまで待ってから、結果が出るまで待つ。失敗または報告なしなら 1 を返す。
 watch_checks() {
-  local branch="$1" i
+  local number="$1" i
   for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-    gh pr checks "$branch" 2>&1 | grep -q 'no checks reported' || break
+    gh pr checks "$number" 2>&1 | grep -q 'no checks reported' || break
     sleep 5
   done
-  gh pr checks "$branch" --watch
+  gh pr checks "$number" --watch
 }
 
 cmd_ready() {
   [ $# -eq 0 ] || fail "ready は引数を取らない"
-  local branch
+  local branch number
   branch=$(current_branch)
   if ! has_origin; then
     bash "$ROOT/.claude/scripts/ci.sh"
     return
   fi
   cmd_pr
-  if [ "$(gh pr view "$branch" --json isDraft --jq .isDraft)" = true ]; then
-    gh pr ready "$branch"
+  number=$(require_open_pr "$branch")
+  if [ "$(gh pr view "$number" --json isDraft --jq .isDraft)" = true ]; then
+    gh pr ready "$number"
   fi
-  watch_checks "$branch" \
+  watch_checks "$number" \
     || fail "CI が失敗したか、チェックが報告されていない。失敗なら同じブランチで直す。報告されない（Actions が無効）なら ci.sh を手元で実行する（GIT-25）"
 }
 
 cmd_merge() {
   [ $# -eq 0 ] || fail "merge は引数を取らない"
-  local branch base
+  local branch base number
   branch=$(current_branch)
   case "$branch" in main|develop) fail "$branch はマージ元にしない（GIT-02）" ;; hotfix/*) base=main ;; *) base=develop ;; esac
   [ -z "$(git status --porcelain --untracked-files=no)" ] || fail "コミットしていない変更がある。コミットしてからマージする（GIT-10）"
@@ -148,10 +164,11 @@ cmd_merge() {
     return
   fi
   git push --quiet -u origin "$branch"
-  watch_checks "$branch" || fail "CI が成功していないためマージしない（GIT-25）"
+  number=$(require_open_pr "$branch")
+  watch_checks "$number" || fail "CI が成功していないためマージしない（GIT-25）"
   case "$branch" in
-    hotfix/*) gh pr merge "$branch" --merge ;;
-    *) gh pr merge "$branch" --merge --delete-branch ;;
+    hotfix/*) gh pr merge "$number" --merge ;;
+    *) gh pr merge "$number" --merge --delete-branch ;;
   esac
   git switch --quiet "$base"
   git pull --quiet --ff-only
