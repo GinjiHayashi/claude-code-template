@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ハーネス（このテンプレート）から開発用のリポジトリを作る（README「1. 開発用のリポジトリを作る」）。
+# ハーネス（このテンプレート）から開発用のリポジトリを作る（docs/harness.md「1. 開発用のリポジトリを作る」）。
 # ハーネスの直下で人間が `npm run create-repo` で実行する。`-- --dry-run` なら、することを表示するだけ。
 # 設定は .env（.env.sample を写して書く）か環境変数。引数の指定は .env より優先する:
 #   npm run create-repo -- [<owner/name | URL>] [--dir <clone 先>] [--public] [--dry-run]

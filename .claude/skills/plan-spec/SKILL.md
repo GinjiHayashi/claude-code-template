@@ -11,13 +11,13 @@ argument-hint: "[REQ-ID | change <変更内容>]"
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/planning.md`、`docs/guidelines/documentation.md`、`docs/guidelines/workflow.md`、`docs/guidelines/git.md` を読む。判断は推奨案で決め、質問は PLAN-06 に当たるものだけにする（PLAN-05・06）。質問は一覧を示してから1問ずつ行い、回答ごとに TASK に記録する（PLAN-07・08）。
 2. `docs/project/` の overview.md、tech.md、glossary.md を読む。
 3. 引数が空でも REQ がすでにあれば、ユーザーの依頼を変更内容として変更要求の計画（9〜14）に進む。
-4. `bash .claude/scripts/task.sh begin <ブランチ名> <ファイル名> <タスク名> [関連ID]` で作業ブランチと TASK を作る。
+4. `bash .claude/scripts/task.sh begin --next '<次の一手>' <ブランチ名> <ファイル名> <タスク名> [関連ID]` で作業ブランチと TASK を作る。
 
-   | 引数 | ブランチ名 | タスク名 |
-   |---|---|---|
-   | 空 | `feature/setup` | 要件定義 |
-   | `change` | `feature/change-<ファイル名>` | 変更要求: <変更内容の要約> |
-   | REQ の ID | `feature/REQ-xxx-<REQ のファイル名の名前部分>`。変更のブランチにいるなら `-`（切り替えない） | REQ-xxx の設計（関連ID に REQ） |
+   | 引数 | ブランチ名 | タスク名 | 次の一手 |
+   |---|---|---|---|
+   | 空 | `feature/setup` | 要件定義 | `/plan-spec` の手順 5: 要件を洗い出す |
+   | `change` | `feature/change-<ファイル名>` | 変更要求: <変更内容の要約> | `/plan-spec change` の手順 9: 影響一覧を作る |
+   | REQ の ID | `feature/REQ-xxx-<REQ のファイル名の名前部分>`。変更のブランチにいるなら `-`（切り替えない） | REQ-xxx の設計（関連ID に REQ） | `/plan-spec REQ-xxx` の手順 15: REQ と architecture.md を読む |
 
 ## 要件定義（引数なし）
 5. overview.md の目的・スコープ・成功基準から要件を洗い出し、要件ごとに `templates/requirement.md` から `docs/project/requirements/REQ-xxx-<名前>.md` を作る（PLAN-13〜15）。`<名前>` は glossary.md の「コード上の名前」を使い、ない用語は先に登録する。

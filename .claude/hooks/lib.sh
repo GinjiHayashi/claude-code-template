@@ -4,6 +4,9 @@
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 TECH_MD="$ROOT/docs/project/tech.md"
 TASKS_DIR="$ROOT/docs/project/tasks"
+# テストの説明（DES-xxx #n）を探すときに除くフォルダ（資料、設定、生成物、依存ライブラリ）。Markdown のファイルも除く。
+# shellcheck disable=SC2034  # audit.sh と test-list.sh が使う
+EXCLUDED_DIRS=".git docs .claude node_modules vendor dist build target .venv"
 
 # 標準入力の JSON から編集対象のパスを取り出す。jq がなければ sed で読む。
 # 引数で JSON を渡した場合は、標準入力の代わりにそれを読む。
@@ -56,6 +59,38 @@ to_relative() {
   printf '%s' "${path#./}"
 }
 
+PROJECT_DIR="$ROOT/docs/project"
+TEST_ITEMS="$PROJECT_DIR/test-items.md"
+
+# ID（例: DES-003）の資料ファイルを返す。なければ空。
+document_of() {
+  local folder
+  case "$1" in
+    REQ-*) folder=requirements ;; DES-*) folder=design ;; ADR-*) folder=adr ;; TASK-*) folder=tasks ;; *) return 0 ;;
+  esac
+  ls "$PROJECT_DIR/$folder/$1"-*.md 2>/dev/null | head -n 1
+}
+
+# 資料（ファイルかフォルダ）の中の資料 ID の参照のうち、資料が存在しないものを「パス:行:ID」で1行1件返す。
+missing_documents_in() {
+  local reference id
+  grep -rHnoE '(REQ|DES|TASK)-[0-9]{3}|ADR-[0-9]{4}' "$@" 2>/dev/null | while IFS= read -r reference; do
+    id=${reference##*:}
+    case "$id" in *-000|*-0000) continue ;; esac
+    [ -n "$(document_of "$id")" ] || printf '%s\n' "$reference"
+  done
+}
+
+# test-items.md（$2 で別のファイルも指定できる）の見出し「## DES-xxx」の下にある表の項目番号を1行1件で返す。
+test_item_numbers_of() {
+  local file="${2:-$TEST_ITEMS}"
+  [ -f "$file" ] || return 0
+  awk -v id="$1" '
+    /^## / { inside = (index($0, "## " id " ") == 1 || $0 == "## " id); next }
+    inside && /^\| *[0-9]+ *\|/ { n = $0; sub(/^\| */, "", n); sub(/ *\|.*$/, "", n); print n }
+  ' "$file"
+}
+
 # tech.md の「開発コマンド」表から、指定した操作の欄をそのまま返す（バッククォートは除く）。
 tech_value() {
   local operation="$1"
@@ -90,9 +125,62 @@ front_matter_value() {
   ' "$file"
 }
 
+# 見出し $2（例: "## 次の一手"）のセクション本文（> の説明行と空行を除く）を返す。
+section_of() {
+  awk -v heading="$2" '
+    /^## / { show = ($0 == heading); next }
+    show && !/^>/ && NF { print }
+  ' "$1"
+}
+
 # フロントマターの related（例: [REQ-001, REQ-002]）を空白区切りで返す。
 related_of() {
   front_matter_value "$1" related | tr -d '[]' | tr ',' ' '
+}
+
+# その場編集の形（sed -i、perl -pi、ruby -i）。freeze-guard と bash-write-guard が使う。
+# shellcheck disable=SC2034
+INPLACE_EDIT_PATTERN='(^|[^[:alnum:]_-])(sed|perl|ruby)[[:space:]]+(-[[:alnum:]]*[[:space:]]+)*-[[:alnum:]]*i'
+
+# Bash のコマンドからヒアドキュメントの本文を除く（本文の中の > や ; を書き込み・区切りと誤認しないため）。
+strip_heredocs() {
+  printf '%s\n' "$1" | awk '
+    heredoc != "" { line = $0; sub(/^\t+/, "", line); if (line == heredoc) heredoc = ""; next }
+    { print }
+    match($0, /<<-?[ \t]*["\047]?[A-Za-z_][A-Za-z0-9_]*["\047]?/) && substr($0, RSTART - 1, 1) != "<" {
+      word = substr($0, RSTART, RLENGTH); sub(/^<<-?[ \t]*/, "", word); gsub(/["\047]/, "", word); heredoc = word
+    }
+  '
+}
+
+# Bash のコマンドを、引用符の外の &&・||・;・| と改行で区切った単位に分け、1行1件で返す。ヒアドキュメントの本文は除く。
+command_segments() {
+  strip_heredocs "$1" | awk '
+    {
+      line = $0; out = ""; q = ""
+      for (i = 1; i <= length(line); i++) {
+        c = substr(line, i, 1); n = substr(line, i + 1, 1)
+        if (q != "") { out = out c; if (c == q) q = ""; continue }
+        if (c == "\047" || c == "\"") { q = c; out = out c; continue }
+        if (c == ";" || c == "|" || (c == "&" && n == "&")) {
+          print out; out = ""
+          if (n == c) i++
+          continue
+        }
+        out = out c
+      }
+      print out
+    }
+  '
+}
+
+# 区切った単位の中のリダイレクト（> / >> / >| / &>）の行き先を1行1件で返す。&1 などへの複製は含めない。
+# 引用符の中の > は行き先にしない（行き先そのものの引用符は外す）。
+redirect_targets() {
+  printf '%s\n' "$1" \
+    | sed -E "s/>([[:space:]]*)'([^']*)'/>\1\2/g; s/>([[:space:]]*)\"([^\"]*)\"/>\1\2/g; s/'[^']*'//g; s/\"[^\"]*\"//g" \
+    | grep -oE '>>?\|?[[:space:]]*[^[:space:]&<>|;]+' \
+    | sed -E 's/^>>?\|?[[:space:]]*//'
 }
 
 # status: in-progress / paused の TASK ファイルを1行1件で返す（paused 中も凍結を保つ）。

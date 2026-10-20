@@ -1,7 +1,7 @@
 ---
 status: todo      # todo / in-progress / done / paused
 updated: YYYY-MM-DD
-related: []       # 対応する REQ / DES の ID
+related: []       # 対応する REQ / DES の ID と、出所の TASK の ID（WF-10）
 frozen_tests:     # 凍結したテストファイル（リポジトリ直下からのパス）。凍結時に追記する（TEST-04）
 ---
 # TASK-000 <タスク名>
@@ -15,7 +15,7 @@ frozen_tests:     # 凍結したテストファイル（リポジトリ直下か
 
 ## 完了したこと
 
-（未記入）
+（なし）
 
 ## 次の一手
 > 再開したセッションが最初に行うこと。再開する Skill（引数を含む）と手順の番号、最初に行う1つの具体的な行動を書く（DOC-14）。

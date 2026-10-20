@@ -7,32 +7,10 @@ set -u
 . "$(dirname "$0")/../hooks/lib.sh"
 
 DOCS_DIR="$ROOT/docs"
-PROJECT_DIR="$DOCS_DIR/project"
-TEST_ITEMS="$PROJECT_DIR/test-items.md"
-# テストの説明を探すときに除くフォルダ（資料、設定、生成物、依存ライブラリ）。Markdown のファイルも除く。
-EXCLUDED_DIRS=".git docs .claude node_modules vendor dist build target .venv"
 
 # 指摘を1行出力する（番号は最後に振る）。引数: 観点 根拠ルール 場所 問題 修正案
 finding() {
   printf '| 0 | P1 | %s | %s | %s | %s | %s |\n' "$1" "$2" "$3" "$4" "$5"
-}
-
-# ID（例: DES-003）の資料ファイルを返す。なければ空。
-document_of() {
-  local folder
-  case "$1" in
-    REQ-*) folder=requirements ;; DES-*) folder=design ;; ADR-*) folder=adr ;; TASK-*) folder=tasks ;; *) return 0 ;;
-  esac
-  ls "$PROJECT_DIR/$folder/$1"-*.md 2>/dev/null | head -n 1
-}
-
-# test-items.md の見出し「## DES-xxx」の下にある表の項目番号を1行1件で返す。
-test_item_numbers_of() {
-  [ -f "$TEST_ITEMS" ] || return 0
-  awk -v id="$1" '
-    /^## / { inside = (index($0, "## " id " ") == 1 || $0 == "## " id); next }
-    inside && /^\| *[0-9]+ *\|/ { n = $0; sub(/^\| */, "", n); sub(/ *\|.*$/, "", n); print n }
-  ' "$TEST_ITEMS"
 }
 
 # RF-20: テストの DES-xxx #n と、final の DES の test-items.md の見出し。
@@ -97,11 +75,8 @@ check_references() {
         || finding RF-25 DOC-01 "$(to_relative "${reference%%:*}"):$(printf '%s' "$reference" | cut -d: -f2)" "ルール $id が guidelines に定義されていない" "正しいルール ID に直す"
     done
   done
-  grep -rnoE '(REQ|DES|TASK)-[0-9]{3}|ADR-[0-9]{4}' "$PROJECT_DIR" 2>/dev/null | while IFS= read -r reference; do
-    id=${reference##*:}
-    case "$id" in *-000|*-0000) continue ;; esac
-    [ -n "$(document_of "$id")" ] \
-      || finding RF-25 DOC-01 "$(to_relative "${reference%%:*}"):$(printf '%s' "$reference" | cut -d: -f2)" "$id の資料が存在しない" "参照を直す"
+  missing_documents_in "$PROJECT_DIR" | while IFS= read -r reference; do
+    finding RF-25 DOC-01 "$(to_relative "${reference%%:*}"):$(printf '%s' "$reference" | cut -d: -f2)" "${reference##*:} の資料が存在しない" "参照を直す"
   done
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ハーネス（このテンプレート）の更新を取り込む（README「ハーネスの更新を取り込む」）。
+# ハーネス（このテンプレート）の更新を取り込む（docs/harness.md「2.11 ハーネスの更新を取り込む」）。
 # create-repo.sh で作ったリポジトリの直下で `npm run update-harness` で実行する。
 # 手順:
 #   1. remote harness がなければ足し（.env の HARNESS_REPO。空なら GinjiHayashi/claude-code-template）、
@@ -57,6 +57,8 @@ if git show-ref --verify --quiet "refs/heads/$BRANCH" || { has_origin && [ -n "$
   fail "$BRANCH がすでにある。前回の取り込みの PR をマージしてから実行するか、そのブランチで続ける"
 fi
 git switch --quiet --no-track -c "$BRANCH" "$base"
+# 直下の README.md はこのリポジトリの側を残す（.gitattributes の merge=ours が使うドライバ）。
+git config merge.ours.driver true
 if ! git merge --quiet --no-ff -m "$TITLE" harness/main; then
   printf '%s\n' \
     "update-harness.sh: 衝突したので止めた（$BRANCH でマージの途中）。衝突したファイル:" \
