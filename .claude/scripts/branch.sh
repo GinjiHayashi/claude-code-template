@@ -6,8 +6,9 @@
 #   branch.sh start hotfix                 main の最新のタグから hotfix/v<次のパッチ版> を切る
 #   branch.sh pr                           プッシュし、現在のブランチの開いている PR がなければ下書き PR を作って、URL を出力する
 #                                          （同名のブランチのマージ済み PR は対象にしない。ready・merge も開いている PR を対象にする）
-#   branch.sh ready                        プッシュして PR の下書きを解除し、CI の結果を待つ（origin がなければ ci.sh を実行する）
-#   branch.sh merge                        CI の成功を確かめて PR をマージし、develop を最新にする（hotfix/ は main へ入れ、ブランチを残す。
+#   branch.sh ready                        プッシュして PR の下書きを解除し、HEAD の CI の結果を待つ（origin がなければ ci.sh を実行する）
+#   branch.sh merge                        HEAD の CI の成功を確かめて PR をマージし、develop を最新にする（hotfix/ は main へ入れ、ブランチを残す。
+#                                          CI の取り消しは1回だけ再実行し、GitHub の一時的な失敗（5xx）のマージは3回まで試す。
 #                                          origin がなければ develop へ --no-ff でマージする）
 #   branch.sh link <起点のコミット>        起点から HEAD までの比較の URL を出力する（origin がなければ git diff --stat）
 #   branch.sh link --commit <コミット>      1つのコミットのページの URL を出力する
@@ -125,14 +126,53 @@ cmd_pr() {
   fi
 }
 
-# PR のチェックが報告されるまで待ってから、結果が出るまで待つ。失敗または報告なしなら 1 を返す。
+# コミットの CI（ci.yml）の実行が終わるまで待ち、成功なら 0、失敗・未登録なら 1 を返す（GIT-25）。
+# プッシュ直後は実行がまだ登録されていないため、最大2分待つ。下書きのときの実行（ジョブを飛ばした実行）は数えない。
+# 取り消された実行は1回だけ再実行する。
 watch_checks() {
-  local number="$1" i
-  for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-    gh pr checks "$number" 2>&1 | grep -q 'no checks reported' || break
-    sleep 5
+  local sha="$1" ignored=" " rerun="" run_id id run_conclusion job_conclusion _
+  for _ in $(seq 1 24); do
+    run_id=""
+    for id in $(gh run list --commit "$sha" --workflow ci.yml --json databaseId --jq '.[].databaseId'); do
+      case "$ignored" in *" $id "*) ;; *) run_id="$id"; break ;; esac
+    done
+    if [ -z "$run_id" ]; then sleep 5; continue; fi
+    gh run watch "$run_id" --exit-status >/dev/null 2>&1 || true
+    read -r run_conclusion job_conclusion < <(gh run view "$run_id" --json conclusion,jobs \
+      --jq '"\(.conclusion) \([.jobs[].conclusion][0] // "none")"')
+    case "$run_conclusion $job_conclusion" in
+      "success success") return 0 ;;
+      *" skipped") ignored="$ignored$run_id " ;;
+      "cancelled "*)
+        [ -z "$rerun" ] || return 1
+        rerun=1
+        echo "branch.sh: CI の実行が取り消されたため、1回だけ再実行する" >&2
+        gh run rerun "$run_id"
+        sleep 5 ;;
+      *) return 1 ;;
+    esac
   done
-  gh pr checks "$number" --watch
+  return 1
+}
+
+# PR をマージする。GitHub の一時的な失敗（5xx）なら、間隔を空けて3回まで試す。
+merge_pr() {
+  local number="$1" attempt out
+  shift
+  for attempt in 1 2 3; do
+    if out=$(gh pr merge "$number" --merge "$@" 2>&1); then
+      [ -z "$out" ] || printf '%s\n' "$out"
+      return 0
+    fi
+    printf '%s\n' "$out" >&2
+    # 失敗と表示されても、GitHub 側ではマージが済んでいることがある。
+    [ "$(gh pr view "$number" --json state --jq .state 2>/dev/null)" != MERGED ] || return 0
+    case "$out" in *"HTTP 5"[0-9][0-9]*|*"Bad Gateway"*|*"Service Unavailable"*|*"Gateway Timeout"*) ;; *) return 1 ;; esac
+    [ "$attempt" -lt 3 ] || break
+    echo "branch.sh: GitHub の一時的な失敗のため、$((attempt * 10)) 秒後に再試行する" >&2
+    sleep $((attempt * 10))
+  done
+  return 1
 }
 
 cmd_ready() {
@@ -148,8 +188,8 @@ cmd_ready() {
   if [ "$(gh pr view "$number" --json isDraft --jq .isDraft)" = true ]; then
     gh pr ready "$number"
   fi
-  watch_checks "$number" \
-    || fail "CI が失敗したか、チェックが報告されていない。失敗なら同じブランチで直す。報告されない（Actions が無効）なら ci.sh を手元で実行する（GIT-25）"
+  watch_checks "$(git rev-parse HEAD)" \
+    || fail "CI が失敗したか、実行が登録されていない。失敗なら同じブランチで直す。登録されない（Actions が無効）なら ci.sh を手元で実行する（GIT-25）"
 }
 
 cmd_merge() {
@@ -165,11 +205,11 @@ cmd_merge() {
   fi
   git push --quiet -u origin "$branch"
   number=$(require_open_pr "$branch")
-  watch_checks "$number" || fail "CI が成功していないためマージしない（GIT-25）"
+  watch_checks "$(git rev-parse HEAD)" || fail "CI が成功していないためマージしない（GIT-25）"
   case "$branch" in
-    hotfix/*) gh pr merge "$number" --merge ;;
-    *) gh pr merge "$number" --merge --delete-branch ;;
-  esac
+    hotfix/*) merge_pr "$number" ;;
+    *) merge_pr "$number" --delete-branch ;;
+  esac || fail "PR #$number をマージできなかった。表示されたエラーを確かめる"
   git switch --quiet "$base"
   git pull --quiet --ff-only
   printf 'マージした: %s → %s\n' "$branch" "$base"
