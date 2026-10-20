@@ -103,6 +103,51 @@ related_of() {
   front_matter_value "$1" related | tr -d '[]' | tr ',' ' '
 }
 
+# その場編集の形（sed -i、perl -pi、ruby -i）。freeze-guard と bash-write-guard が使う。
+# shellcheck disable=SC2034
+INPLACE_EDIT_PATTERN='(^|[^[:alnum:]_-])(sed|perl|ruby)[[:space:]]+(-[[:alnum:]]*[[:space:]]+)*-[[:alnum:]]*i'
+
+# Bash のコマンドからヒアドキュメントの本文を除く（本文の中の > や ; を書き込み・区切りと誤認しないため）。
+strip_heredocs() {
+  printf '%s\n' "$1" | awk '
+    heredoc != "" { line = $0; sub(/^\t+/, "", line); if (line == heredoc) heredoc = ""; next }
+    { print }
+    match($0, /<<-?[ \t]*["\047]?[A-Za-z_][A-Za-z0-9_]*["\047]?/) && substr($0, RSTART - 1, 1) != "<" {
+      word = substr($0, RSTART, RLENGTH); sub(/^<<-?[ \t]*/, "", word); gsub(/["\047]/, "", word); heredoc = word
+    }
+  '
+}
+
+# Bash のコマンドを、引用符の外の &&・||・;・| と改行で区切った単位に分け、1行1件で返す。ヒアドキュメントの本文は除く。
+command_segments() {
+  strip_heredocs "$1" | awk '
+    {
+      line = $0; out = ""; q = ""
+      for (i = 1; i <= length(line); i++) {
+        c = substr(line, i, 1); n = substr(line, i + 1, 1)
+        if (q != "") { out = out c; if (c == q) q = ""; continue }
+        if (c == "\047" || c == "\"") { q = c; out = out c; continue }
+        if (c == ";" || c == "|" || (c == "&" && n == "&")) {
+          print out; out = ""
+          if (n == c) i++
+          continue
+        }
+        out = out c
+      }
+      print out
+    }
+  '
+}
+
+# 区切った単位の中のリダイレクト（> / >> / >| / &>）の行き先を1行1件で返す。&1 などへの複製は含めない。
+# 引用符の中の > は行き先にしない（行き先そのものの引用符は外す）。
+redirect_targets() {
+  printf '%s\n' "$1" \
+    | sed -E "s/>([[:space:]]*)'([^']*)'/>\1\2/g; s/>([[:space:]]*)\"([^\"]*)\"/>\1\2/g; s/'[^']*'//g; s/\"[^\"]*\"//g" \
+    | grep -oE '>>?\|?[[:space:]]*[^[:space:]&<>|;]+' \
+    | sed -E 's/^>>?\|?[[:space:]]*//'
+}
+
 # status: in-progress / paused の TASK ファイルを1行1件で返す（paused 中も凍結を保つ）。
 in_progress_tasks() {
   local task
