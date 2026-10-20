@@ -10,14 +10,14 @@ argument-hint: "<plan|test|code> <対象>"
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/review.md` を読む。
 2. レビュアーを決める。`plan` → plan-reviewer、`test` → test-reviewer、`code` → code-reviewer。
-3. `code` ならテスト・リント・ビルドの成功を、`test` なら Red（TEST-03）を確認済みであることを確かめる（REV-15）。
+3. `code` ならテスト・リント・ビルドの成功を、`test` なら Red（TEST-03）を確認済みであることを確かめる。`plan` なら `bash .claude/scripts/plan-lint.sh <対象の資料>` を実行し、指摘を直して0件にする（REV-15）。
 
 ## ラウンド（最大3回）
 4. 差分を `.claude/review/<TASK-ID>-r<ラウンド番号>.diff` に保存する。`test` はテストファイルの `git diff HEAD`（新しいファイルは `git add -N` してから）、`code` は呼び出し側が指定したコミット（凍結コミットか起点のコミット）からの `git diff`、既存の資料を改訂した `plan` は改訂した資料の `git diff HEAD`。新しく作った資料だけの `plan` は差分を作らない。
 5. レビュアーに REV-13 のものだけを渡す。
 6. 返ってきた1行目の件数を読み、ルール ID のない P0・P1 と存在しない ID の指摘を除く（REV-04）。合格（REV-06）なら終了する。
 7. 不合格なら P0 と P1 を直す。REV-08 に当たる P1（前ラウンドの修正を戻す向きの指摘を含む）は直さずに保留し、条件番号と理由を TASK に書く。P2 は直さなくてよく、直すならこのラウンドに含める。
-8. `test` なら Red を、`code` ならテスト・リント・ビルドを確認し直す。
+8. `test` なら Red を、`code` ならテスト・リント・ビルドを、`plan` なら `plan-lint.sh` を確認し直す。
 9. ラウンドの件数（P0 / P1 / P2、保留）を `task.sh log` で書く。3ラウンド目の後も P0 か保留以外の P1 が残れば、修正を止めて一覧をユーザーに渡す（REV-07）。
 
 ## 終了時

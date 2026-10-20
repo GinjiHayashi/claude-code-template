@@ -8,7 +8,7 @@ description: 新しいプロジェクトの開発を始めるとき、または 
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/planning.md`、`docs/guidelines/documentation.md`、`docs/guidelines/git.md` を読む。
-2. `bash .claude/scripts/task.sh begin feature/setup kickoff 開発開始` で作業ブランチと TASK を作る（develop がなければ、docs/harness.md 2.1 の準備をユーザーに頼んで止まる）。
+2. `bash .claude/scripts/task.sh begin --next '/kickoff の手順 3: テンプレートを用意する' feature/setup kickoff 開発開始` で作業ブランチと TASK を作る（develop がなければ、docs/harness.md 2.1 の準備をユーザーに頼んで止まる）。
 
 ## テンプレートの用意
 3. `docs/project/` に overview.md、tech.md、glossary.md がなければ、`docs/guidelines/templates/` からコピーする。

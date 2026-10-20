@@ -9,7 +9,7 @@ argument-hint: "[hotfix] <変更内容>"
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/workflow.md`、`docs/guidelines/testing.md`、`docs/guidelines/coding.md`、`docs/guidelines/documentation.md`、`docs/guidelines/git.md` を読む。
-2. `bash .claude/scripts/task.sh begin <ブランチ名> <ファイル名> <変更内容の要約>` で作業ブランチと TASK を作る。ブランチ名は `feature/change-<ファイル名>`。`hotfix` で始まり GIT-60 に当たる場合だけ `hotfix` を渡す（当たらなければ通常の軽微な変更として進める）。
+2. `bash .claude/scripts/task.sh begin --next '/quick-change の手順 3: 変更箇所を調べる' <ブランチ名> <ファイル名> <変更内容の要約>` で作業ブランチと TASK を作る。ブランチ名は `feature/change-<ファイル名>`。`hotfix` で始まり GIT-60 に当たる場合だけ `hotfix` を渡す（当たらなければ通常の軽微な変更として進める）。
 
 ## 探索と判定
 3. 変更箇所と影響範囲を Explore サブエージェントで調べる。
@@ -19,12 +19,12 @@ argument-hint: "[hotfix] <変更内容>"
 5. 資料を直し、`/review-loop plan <直した資料>` でレビューして、合格したらコミットして「完了」へ進む。
 
 ## コードの変更
-6. 不具合の修正なら、再現するテストを書く（DES の番号がなければ説明に不具合を書く）。追加したテストだけがアサーションで失敗し、既存のテストは成功することを確かめ、テストファイルだけをコミットする。`task.sh freeze` で凍結し、`task.sh log` で凍結コミットのハッシュを書く。
+6. 不具合の修正なら、再現するテストを書く（DES の番号がなければ説明に不具合を書く）。追加したテストだけがアサーションで失敗し、既存のテストは成功することを確かめ、テストファイルと TASK をコミットする。`task.sh freeze` で凍結し、`task.sh log` で凍結コミットのハッシュを書く（7 のコミットに含める）。
 7. 修正し、tech.md のテスト、リント、フォーマット、ビルドをすべて成功させてコミットする。途中で WF-17 を満たさなくなったら 4 と同じく切り替える。
 8. `/review-loop code` で、2 の起点のコミットからの差分をレビューし、終わったらコミットする。
 9. 振る舞いが DES の記述と変わった場合は、DES と test-items.md を直して `/review-loop plan` でレビューする。
 
 ## 完了
-10. PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行する。変更内容、レビュー結果、人間確認が要る点を承認パケット（GIT-30。差分リンクは起点のコミットから）で示して確認を求める。返答の後に PR へのコメントも読む（GIT-32）。
-11. TASK を `done` にしてコミットし、`bash .claude/scripts/branch.sh merge` でマージする。
+10. TASK を `done` にしてコミットし、PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行する（CI を待つのはこの1回）。変更内容、レビュー結果、人間確認が要る点を承認パケット（GIT-30。差分リンクは起点のコミットから）で示して確認を求める。返答の後に PR へのコメントも読む（GIT-32）。
+11. 確認を得たら、結果を `task.sh log` で書いてコミット・プッシュし、`bash .claude/scripts/branch.sh merge` でマージする。直す点があれば TASK を `in-progress` に戻して直す。
 12. hotfix の場合は、11 の後に続けて行う。(1) `main` のマージコミットに `/release` の手順 8 と同じくタグとリリースノートを付ける (2) hotfix ブランチに戻り、`develop` 向きの PR を `gh pr create --base develop` で作り、CI の成功を確かめてマージする。コンフリクトしたら hotfix ブランチに `git merge develop` で取り込んで解消し、テスト・リント・ビルドを成功させてから入れる (3) hotfix ブランチを削除する

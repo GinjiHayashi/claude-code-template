@@ -183,7 +183,7 @@ claude
 3. Claude が示す内容（用語集の英語名を含む）を**承認**します。承認の後、Claude が概要と技術・環境をもとに、直下の `README.md` をプロジェクトの説明（概要、環境構築、起動方法、この説明へのリンク）に書き換えます。
 4. `/plan-spec` を実行します。Claude が要件（REQ）と実装順を決め、AI レビューを通します。要件一覧・実装順・各 REQ の「判断」を**承認**します。
 5. 実装順に `/plan-spec REQ-001` などで要件ごとに設計（DES）とテスト項目を作ります。設計と各 DES の「判断」を**承認**します。
-6. `/implement-tdd DES-001` などで設計1つずつ実装します。テストの作成 → Red の確認 → テストのレビュー → テストの凍結 → 実装 → 整理 → コードのレビューまでを Claude が進めます。最後に示される人間確認の項目を**確認**します。
+6. `/implement-tdd DES-001` などで設計1つずつ実装します。テストの作成 → Red の確認 → テストのレビュー → テストの凍結 → 実装 → 整理 → コードのレビューまでを Claude が進めます。その要件の全設計の実装が終わったところで、まとめて示される人間確認の項目を**確認**します（設計ごとには聞かれません）。
 7. 全要件が終わるまで 5〜6 を繰り返します。
 
 ### 2.3 機能を追加する・仕様を変える・機能を削除する
@@ -198,7 +198,7 @@ claude
 2. Claude が影響一覧（変える REQ・DES・テスト・資料）を作り、REQ を追加・改訂・削除して実装順を決めます。目的やスコープが変わる場合だけ、overview.md の改訂点を質問されます。
 3. 影響一覧・実装順・各 REQ の「判断」を**承認**します。
 4. 実装順に `/plan-spec REQ-xxx` で設計し、**承認**します。既存の振る舞いを変える場合は、新しい DES を足さずに既存の DES が改訂されます。
-5. `/implement-tdd DES-xxx` で実装し、人間確認の項目を**確認**します。
+5. `/implement-tdd DES-xxx` で実装し、変更分の実装がすべて終わったところで、まとめて示される人間確認の項目を**確認**します。
 
 ### 2.4 小さな不具合や文言・設定を直す
 
@@ -330,7 +330,7 @@ docs 内の各資料に何を書くか、いつ読むかは [`docs/README.md`](R
 ├── .claude/
 │   ├── settings.json          # 権限、hooks、応答言語（日本語）
 │   ├── hooks/                 # session-start / freeze-guard / branch-guard / format と共通関数 lib.sh
-│   ├── scripts/               # 定型の操作（task.sh、branch.sh、ci.sh、progress.sh、audit.sh、create-repo.sh、update-harness.sh。使い方は各スクリプトの冒頭）
+│   ├── scripts/               # 定型の操作（task.sh、branch.sh、ci.sh、progress.sh、audit.sh、plan-lint.sh、test-list.sh、create-repo.sh、update-harness.sh。使い方は各スクリプトの冒頭）
 │   ├── agents/                # レビュー（plan / test / code-reviewer）と全体点検（code / docs-auditor）のサブエージェント
 │   └── skills/                # 作業の手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor /release
 └── docs/

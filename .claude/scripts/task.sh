@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # タスク記録（docs/project/tasks/TASK-xxx-*.md）を作成・更新する。更新規則は DOC-10〜13、WF-09・11。
 # 使い方:
-#   task.sh begin <ブランチ名|hotfix|-> <ファイル名> <タスク名> [関連ID ...]
-#       作業ブランチに入り（- なら今のブランチのまま）、TASK を作って in-progress にし、起点のコミットを作業ログに書いてコミットする（GIT-10 (1)）
-#   task.sh new <ファイル名（英語のケバブケース）> <タスク名> [関連ID ...]   新しい TASK を作り、パスを出力する（番号は全ブランチの最大＋1）
+#   task.sh begin [--next <次の一手>] <ブランチ名|hotfix|-> <ファイル名> <タスク名> [関連ID ...]
+#       作業ブランチに入り（- なら今のブランチのまま）、TASK を作って in-progress にし、起点のコミットを作業ログに書く。
+#       「現在のフェーズ」は「探索」、「次の一手」は --next の値（省くと「<タスク名> の探索を始める」）にする（DOC-14）
+#   task.sh new <ファイル名（英語のケバブケース）> <タスク名> [関連ID ...]   新しい TASK を作り、パスを出力する（番号は全ブランチの最大＋1）。
+#       「現在のフェーズ」は「未着手」、「次の一手」は関連 ID から決まる Skill（DES があれば /implement-tdd、REQ だけなら /plan-spec）にする
 #   task.sh status <TASK-ID> <todo|in-progress|done|paused>               フロントマターの status を変える
 #   task.sh phase <TASK-ID> <現在のフェーズ> <次の一手>                    2つのセクションを上書きする
 #   task.sh log <TASK-ID> <フェーズ> <行ったことと結果>                    作業ログに1行追記する（DOC-11）
 #   task.sh freeze <TASK-ID> <テストファイルのパス>                         frozen_tests に追記する（TEST-04）
-#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID を追記する（WF-10）
+#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID か、出所の TASK の ID を追記する（WF-10）
+# どのサブコマンドもコミットしない。TASK の変更は、次のコミット（テスト、実装、レビューの後など）に含める（GIT-10）。
 set -eu
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
@@ -80,12 +83,36 @@ cmd_new() {
     { print }
   ' "$TEMPLATE" > "$file"
   rewrite "$file" '{ print }'
+  replace_section "$file" "## 現在のフェーズ" "未着手"
+  replace_section "$file" "## 次の一手" "$(first_step_of "$title" "$@")"
   printf '%s\n' "${file#"$ROOT"/}"
 }
 
+# 関連 ID（$2 以降）から、TASK を始める Skill の最初の手順を DOC-14 の形で返す。$1 はタスク名。
+# shellcheck disable=SC2016  # バッククォートは Markdown のコードの印
+first_step_of() {
+  local title="$1" id des="" req=""; shift
+  for id in "$@"; do
+    case "$id" in DES-[0-9]*) des=${des:-$id} ;; REQ-[0-9]*) req=${req:-$id} ;; esac
+  done
+  if [ -n "$des" ]; then
+    printf '`/implement-tdd %s` の手順 1: 規則と対象の DES を読む' "$des"
+  elif [ -n "$req" ]; then
+    printf '`/plan-spec %s` の手順 1: 規則を読んで設計を始める' "$req"
+  else
+    printf '%s に着手する' "$title"
+  fi
+}
+
 cmd_begin() {
-  [ $# -ge 3 ] || fail "begin <ブランチ名 | hotfix | -> <ファイル名> <タスク名> [関連ID ...]"
+  local next=""
+  if [ "${1-}" = "--next" ]; then
+    [ $# -ge 2 ] || fail "--next の後に次の一手を書く"
+    next="$2"; shift 2
+  fi
+  [ $# -ge 3 ] || fail "begin [--next <次の一手>] <ブランチ名 | hotfix | -> <ファイル名> <タスク名> [関連ID ...]"
   local branch="$1" base file id; shift
+  next=${next:-"$2 の探索を始める"}
   if [ "$branch" != "-" ]; then
     bash "$(dirname "$0")/branch.sh" start "$branch" >/dev/null || exit 1
   fi
@@ -95,10 +122,9 @@ cmd_begin() {
   file=$(cmd_new "$@") || exit 1
   id=$(basename "$file" | sed -n 's/^\(TASK-[0-9]*\)-.*/\1/p')
   cmd_status "$id" in-progress
+  cmd_phase "$id" 探索 "$next"
   cmd_log "$id" 開始 "起点のコミット $base"
-  git -C "$ROOT" add "$file"
-  git -C "$ROOT" commit --quiet -m "chore($id): TASK を作成" -m "Refs: $id"
-  printf 'TASK: %s\nブランチ: %s\n起点のコミット: %s\n' "$file" "$branch" "$base"
+  printf 'TASK: %s（次のコミットに含める。GIT-10）\nブランチ: %s\n起点のコミット: %s\n' "$file" "$branch" "$base"
 }
 
 cmd_status() {
@@ -149,7 +175,7 @@ cmd_freeze() {
 
 cmd_relate() {
   [ $# -eq 2 ] || fail "relate <TASK-ID> <ID>"
-  case "$2" in REQ-[0-9]*|DES-[0-9]*) ;; *) fail "ID は REQ-xxx か DES-xxx: $2" ;; esac
+  case "$2" in REQ-[0-9]*|DES-[0-9]*|TASK-[0-9]*) ;; *) fail "ID は REQ-xxx、DES-xxx、TASK-xxx のどれか: $2" ;; esac
   rewrite "$(task_file "$1")" -v id="$2" '
     NR == 1 && $0 == "---" { inside = 1 }
     inside && NR > 1 && $0 == "---" { inside = 0 }

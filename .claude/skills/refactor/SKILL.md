@@ -10,7 +10,7 @@ allowed-tools: Bash(bash .claude/scripts/audit.sh)
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/refactoring.md`、`docs/guidelines/review.md`、`docs/guidelines/git.md` を読む。
-2. ブランチ名を決める。`git fetch --prune origin` の後（origin がなければ省く）、`git branch -a --list 'feature/refactor-<今日の YYYYMMDD>*' 'origin/feature/refactor-<今日の YYYYMMDD>*'` に同じ名前があれば `-2`・`-3` の連番を付ける（GIT-06）。`bash .claude/scripts/task.sh begin <ブランチ名> refactor リファクタリング` で作業ブランチと TASK を作る。
+2. ブランチ名を決める。`git fetch --prune origin` の後（origin がなければ省く）、`git branch -a --list 'feature/refactor-<今日の YYYYMMDD>*' 'origin/feature/refactor-<今日の YYYYMMDD>*'` に同じ名前があれば `-2`・`-3` の連番を付ける（GIT-06）。`bash .claude/scripts/task.sh begin --next '/refactor の手順 3: テスト・リント・ビルドを実行する' <ブランチ名> refactor リファクタリング` で作業ブランチと TASK を作る。
 
 ## 診断
 3. tech.md のテスト、リント、ビルドを実行する（RF-28）。失敗したら P0 の指摘にし、自動修正は行わない（RF-43）。
@@ -30,5 +30,5 @@ allowed-tools: Bash(bash .claude/scripts/audit.sh)
 
 ## 完了
 13. 変更要求の候補を TASK の「未解決事項」に一覧で書く（RF-45）。
-14. PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行し、直した内容、レビュー結果、変更要求の候補を承認パケット（差分リンクは起点のコミットから）で示して確認を求める。候補を直す場合は1件ずつ `/plan-spec change` で進めると伝える。
-15. TASK を `done` にしてコミットし、`bash .claude/scripts/branch.sh merge` でマージする。
+14. TASK を `done` にしてコミットし、PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行し（CI を待つのはこの1回）、直した内容、レビュー結果、変更要求の候補を承認パケット（差分リンクは起点のコミットから）で示して確認を求める。候補を直す場合は1件ずつ `/plan-spec change` で進めると伝える。
+15. 確認を得たら、結果を `task.sh log` で書いてコミット・プッシュし、`bash .claude/scripts/branch.sh merge` でマージする。

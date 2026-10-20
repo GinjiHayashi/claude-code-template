@@ -6,8 +6,6 @@
 set -u
 . "$(dirname "$0")/../hooks/lib.sh"
 
-PROJECT_DIR="$ROOT/docs/project"
-
 # 本文の最初の「# 」見出し（資料の題名）を返す。
 title_of() {
   awk '/^# / { sub(/^# /, ""); print; exit }' "$1"
