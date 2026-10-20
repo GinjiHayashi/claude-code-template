@@ -67,7 +67,7 @@ cmd_start() {
   elif has_origin && git rev-parse --verify --quiet "origin/$name" >/dev/null; then
     git switch --quiet -c "$name" --track "origin/$name"
   else
-    git rev-parse --verify --quiet "$base" >/dev/null || fail "$base がない。README 2.1 の準備で develop を作る"
+    git rev-parse --verify --quiet "$base" >/dev/null || fail "$base がない。docs/harness.md 2.1 の準備で develop を作る"
     git switch --quiet --no-track -c "$name" "$base"
   fi
   printf 'ブランチ: %s\n起点のコミット: %s\n' "$name" "$(git rev-parse --short=12 HEAD)"

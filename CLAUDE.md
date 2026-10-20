@@ -2,7 +2,7 @@
 
 ## このリポジトリについて
 - 目的と範囲は `docs/project/overview.md` を読む。
-- 開発の進め方は `docs/guidelines/workflow.md` に、各作業の手順は Skill（`.claude/skills/`）にある。`README.md` は人間向けの説明なので、作業のために読まなくてよい。
+- 開発の進め方は `docs/guidelines/workflow.md` に、各作業の手順は Skill（`.claude/skills/`）にある。`docs/harness.md`（ハーネスの説明）と直下の `README.md`（プロジェクトの紹介。`/kickoff` が書く）は人間向けなので、作業のために読まなくてよい。
 
 ## セッション開始時
 - SessionStart hook が進行中の TASK を表示する。表示された TASK の「次の一手」にある Skill を読み込み、その手順から再開する（DOC-14）。質問の途中なら PLAN-08 に従う。

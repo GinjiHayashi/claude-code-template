@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse（Bash）: main / develop への直接のコミット・マージ・プッシュを止める（GIT-02）。
-# コマンド文字列で判定するため、典型的な形だけを止める。リモートの保護は GitHub のルールセットで行う（README 2.1）。
+# コマンド文字列で判定するため、典型的な形だけを止める。リモートの保護は GitHub のルールセットで行う（docs/harness.md 2.1）。
 set -u
 . "$(dirname "$0")/lib.sh"
 

@@ -1,0 +1,3 @@
+# ハーネスの更新の取り込み（npm run update-harness）で、直下の README.md は作ったリポジトリの側を残す。
+# merge.ours.driver は update-harness.sh が設定する。ハーネスの説明は docs/harness.md にある。
+README.md merge=ours

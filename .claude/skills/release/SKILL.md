@@ -9,7 +9,7 @@ argument-hint: "[版番号（省略時は GIT-51 で決める）]"
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/git.md` を読む。
-2. `git switch develop && git pull --ff-only` で develop を最新にする。次のどれかに当たれば止めて、理由をユーザーに伝える。(1) `in-progress`・`paused` の TASK がある（他のブランチも含め、`bash .claude/scripts/progress.sh` で確かめる） (2) develop にマージしていない作業ブランチがある（`git branch -a --no-merged develop`） (3) tech.md のテスト、リント、ビルドのどれかが失敗する
+2. `git switch develop && git pull --ff-only` で develop を最新にする。次のどれかに当たれば止めて、理由をユーザーに伝える。(1) `in-progress`・`paused` の TASK がある（他のブランチも含め、`bash .claude/scripts/progress.sh` で確かめる） (2) develop にマージしていない作業ブランチがある（`git branch -a --no-merged develop`） (3) tech.md のテスト、リント、ビルドのどれかが失敗する (4) 直下の README.md が overview.md・tech.md・architecture.md と食い違っている（食い違いは `/quick-change` で直してから再開する）
 
 ## 版番号と内容
 3. 版番号を決める。`$ARGUMENTS` がなければ `git describe --tags --abbrev=0 --match 'v[0-9]*' main` で前回のタグを得て、`git log <前回のタグ>..develop --format=%s` のコミットから GIT-51 で決める（タグがなければ `v1.0.0`）。
