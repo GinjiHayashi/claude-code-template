@@ -4,6 +4,9 @@
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 TECH_MD="$ROOT/docs/project/tech.md"
 TASKS_DIR="$ROOT/docs/project/tasks"
+# テストの説明（DES-xxx #n）を探すときに除くフォルダ（資料、設定、生成物、依存ライブラリ）。Markdown のファイルも除く。
+# shellcheck disable=SC2034  # audit.sh と test-list.sh が使う
+EXCLUDED_DIRS=".git docs .claude node_modules vendor dist build target .venv"
 
 # 標準入力の JSON から編集対象のパスを取り出す。jq がなければ sed で読む。
 # 引数で JSON を渡した場合は、標準入力の代わりにそれを読む。
