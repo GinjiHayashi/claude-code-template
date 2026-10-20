@@ -10,7 +10,7 @@
 #   task.sh phase <TASK-ID> <現在のフェーズ> <次の一手>                    2つのセクションを上書きする
 #   task.sh log <TASK-ID> <フェーズ> <行ったことと結果>                    作業ログに1行追記する（DOC-11）
 #   task.sh freeze <TASK-ID> <テストファイルのパス>                         frozen_tests に追記する（TEST-04）
-#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID を追記する（WF-10）
+#   task.sh relate <TASK-ID> <ID>                                          related に REQ / DES の ID か、出所の TASK の ID を追記する（WF-10）
 set -eu
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
@@ -176,7 +176,7 @@ cmd_freeze() {
 
 cmd_relate() {
   [ $# -eq 2 ] || fail "relate <TASK-ID> <ID>"
-  case "$2" in REQ-[0-9]*|DES-[0-9]*) ;; *) fail "ID は REQ-xxx か DES-xxx: $2" ;; esac
+  case "$2" in REQ-[0-9]*|DES-[0-9]*|TASK-[0-9]*) ;; *) fail "ID は REQ-xxx、DES-xxx、TASK-xxx のどれか: $2" ;; esac
   rewrite "$(task_file "$1")" -v id="$2" '
     NR == 1 && $0 == "---" { inside = 1 }
     inside && NR > 1 && $0 == "---" { inside = 0 }

@@ -1,6 +1,6 @@
 ---
 status: final
-updated: 2026-10-19
+updated: 2026-10-20
 related: []
 ---
 # ワークフロー
@@ -31,7 +31,7 @@ related: []
 ## タスク記録
 
 - **WF-09** TASK の単位は GIT-03 の表の「TASK」列のとおりとし、1単位につき TASK ファイルを1つ作る。既存 DES の改訂（PLAN-22）は「1要件の設計」に、改訂した DES の実装は「1設計の実装」に含める
-- **WF-10** 設計・実装を含む TASK の `related` には、扱う REQ と DES の ID を書く（`task.sh relate`）。DES の実装状況は、その DES を `related` に持つ TASK のうち番号が最も大きいものの `status` で判定する（該当 TASK がなければ未着手）
+- **WF-10** 設計・実装を含む TASK の `related` には、扱う REQ と DES の ID を書く（`task.sh relate`）。DES の実装状況は、その DES を `related` に持つ TASK のうち番号が最も大きいものの `status` で判定する（該当 TASK がなければ未着手）。別の TASK から生まれた TASK（点検の結果の変更要求など）は、出所の TASK の ID も書いてよい。TASK の ID は WF-23〜25 の判定には使わない
 - **WF-11** フェーズの切り替え時、質問への回答を得たとき（PLAN-08）、レビュー1ラウンドの終了時、セッションの終了・中断時に TASK ファイルを更新する（DOC-10〜13）
 
 ## 承認の依頼
