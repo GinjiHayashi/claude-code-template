@@ -224,7 +224,9 @@ cmd_link() {
     return 0
   fi
   [ $# -eq 1 ] || fail "link <起点のコミット>"
-  sha=$(git rev-parse --verify "$1^{commit}") || fail "コミット $1 がない"
+  # ローカルにないブランチ名（main など）は origin/<name> で解決する。
+  sha=$(git rev-parse --verify --quiet "$1^{commit}" || git rev-parse --verify --quiet "$(upstream_of "$1")^{commit}") \
+    || fail "コミット $1 がない"
   if ! has_origin; then
     git diff --stat "$sha" HEAD
     return 0
