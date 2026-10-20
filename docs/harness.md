@@ -329,7 +329,7 @@ docs 内の各資料に何を書くか、いつ読むかは [`docs/README.md`](R
 │   └── workflows/ci.yml       # CI。ci.sh を実行するだけ
 ├── .claude/
 │   ├── settings.json          # 権限、hooks、応答言語（日本語）
-│   ├── hooks/                 # session-start / freeze-guard / branch-guard / format と共通関数 lib.sh
+│   ├── hooks/                 # session-start / freeze-guard / branch-guard / bash-write-guard / format と共通関数 lib.sh
 │   ├── scripts/               # 定型の操作（task.sh、branch.sh、ci.sh、progress.sh、audit.sh、plan-lint.sh、test-list.sh、review-diff.sh、create-repo.sh、update-harness.sh。使い方は各スクリプトの冒頭）
 │   ├── agents/                # レビュー（plan / test / code-reviewer）と全体点検（code / docs-auditor）のサブエージェント
 │   └── skills/                # 作業の手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor /release
@@ -367,13 +367,14 @@ docs 内の各資料に何を書くか、いつ読むかは [`docs/README.md`](R
 
 ### 4.3 hooks
 
-`.claude/settings.json` に4つの hook を設定しています。スクリプトは `.claude/hooks/` にあり、`claude` をリポジトリの直下で起動したときだけ動きます。
+`.claude/settings.json` に5つの hook を設定しています。スクリプトは `.claude/hooks/` にあり、`claude` をリポジトリの直下で起動したときだけ動きます。
 
 | hook | タイミング | 内容 |
 |---|---|---|
-| session-start | セッション開始、再開、`/clear`、圧縮の後 | 進行中・中断中の TASK の「現在のフェーズ」と「次の一手」を Claude に渡す |
-| freeze-guard | ファイル編集と Bash の実行の直前 | 凍結したテストファイルへの書き込みを止める（Bash はコマンド文字列で判定するため、見抜けない分はコードのレビューで検出する） |
+| session-start | セッション開始、再開、`/clear`、圧縮の後 | 進行中・中断中の TASK の「現在のフェーズ」と「次の一手」を Claude に渡す。なければ、次の一手が書かれた未着手の TASK か、最後に終えた TASK を示す |
+| freeze-guard | ファイル編集と Bash の実行の直前 | 凍結したテストファイルへの書き込みを止める（Bash は `&&`・`;`・`\|` で区切った単位ごとにコマンド文字列で判定するため、見抜けない分はコードのレビューで検出する） |
 | branch-guard | Bash の実行の直前 | `main` と `develop` への直接のコミット・マージ・プッシュを止める（GIT-02） |
+| bash-write-guard | Bash の実行の直前 | リポジトリ内の既存ファイルへのリダイレクト・`tee`・その場編集（`sed -i` など）を止める。ファイルの作成・編集を Edit / Write に寄せ、ほかの hook を働かせるため（`.claude/review/` とリポジトリの外は対象外） |
 | format | ファイル編集の直後 | 技術・環境の資料にあるフォーマットコマンドで、編集したファイルを整形する。未記入か「なし」なら何もしない |
 
 ### 4.4 権限
@@ -398,7 +399,7 @@ docs 内の各資料に何を書くか、いつ読むかは [`docs/README.md`](R
 
 - **ブランチ**: 常設は `main`（リリース済み）と `develop`（統合先）。作業は `develop` から切る `feature/` で行い、リリース済みの本番の緊急修正だけ `main` から `hotfix/` を切ります。1つの要件の設計と全実装で1ブランチ・1 PR です。
 - **コミットとマージ**: 形は `feat(DES-003): 日本語の要約` です。履歴は書き換えず、マージはすべてマージコミットです。
-- **CI**: GitHub Actions が、下書きでない PR と `main`・`develop` へのプッシュで `.claude/scripts/ci.sh` を実行します。ci.sh は技術・環境の資料の開発コマンドを順に実行します。Claude は承認を頼む前とマージの前に CI の成功を確かめます。
+- **CI**: GitHub Actions が、下書きでない PR と `main`・`develop` へのプッシュで `.claude/scripts/ci.sh` を実行します。ci.sh は技術・環境の資料の開発コマンドを順に実行します。タスク記録（`docs/project/tasks/`）だけを変えたプッシュは、前のコミットの CI が成功していれば開発コマンドを飛ばして成功にします。Claude は承認を頼む前とマージの前に CI の成功を確かめます。GitHub の障害で CI が動かないときは、Claude が状況を伝えて承認を得たうえで、手元の ci.sh の成功を条件にマージします（`branch.sh merge --local-ci`、GIT-26）。
 - **イシュー**: 使いません。依頼はチャットで受け、記録はタスク記録だけにします。
 - **GitHub を使わない場合**: スクリプトが手元でのマージ、`git diff --stat`、手元の ci.sh に切り替えます（GIT-33）。
 
