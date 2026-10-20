@@ -9,7 +9,7 @@ argument-hint: "[hotfix] <変更内容>"
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/workflow.md`、`docs/guidelines/testing.md`、`docs/guidelines/coding.md`、`docs/guidelines/documentation.md`、`docs/guidelines/git.md` を読む。
-2. `bash .claude/scripts/task.sh begin <ブランチ名> <ファイル名> <変更内容の要約>` で作業ブランチと TASK を作る。ブランチ名は `feature/change-<ファイル名>`。`hotfix` で始まり GIT-60 に当たる場合だけ `hotfix` を渡す（当たらなければ通常の軽微な変更として進める）。
+2. `bash .claude/scripts/task.sh begin --next '/quick-change の手順 3: 変更箇所を調べる' <ブランチ名> <ファイル名> <変更内容の要約>` で作業ブランチと TASK を作る。ブランチ名は `feature/change-<ファイル名>`。`hotfix` で始まり GIT-60 に当たる場合だけ `hotfix` を渡す（当たらなければ通常の軽微な変更として進める）。
 
 ## 探索と判定
 3. 変更箇所と影響範囲を Explore サブエージェントで調べる。

@@ -10,7 +10,7 @@ allowed-tools: Bash(bash .claude/scripts/audit.sh)
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/refactoring.md`、`docs/guidelines/review.md`、`docs/guidelines/git.md` を読む。
-2. ブランチ名を決める。`git fetch --prune origin` の後（origin がなければ省く）、`git branch -a --list 'feature/refactor-<今日の YYYYMMDD>*' 'origin/feature/refactor-<今日の YYYYMMDD>*'` に同じ名前があれば `-2`・`-3` の連番を付ける（GIT-06）。`bash .claude/scripts/task.sh begin <ブランチ名> refactor リファクタリング` で作業ブランチと TASK を作る。
+2. ブランチ名を決める。`git fetch --prune origin` の後（origin がなければ省く）、`git branch -a --list 'feature/refactor-<今日の YYYYMMDD>*' 'origin/feature/refactor-<今日の YYYYMMDD>*'` に同じ名前があれば `-2`・`-3` の連番を付ける（GIT-06）。`bash .claude/scripts/task.sh begin --next '/refactor の手順 3: テスト・リント・ビルドを実行する' <ブランチ名> refactor リファクタリング` で作業ブランチと TASK を作る。
 
 ## 診断
 3. tech.md のテスト、リント、ビルドを実行する（RF-28）。失敗したら P0 の指摘にし、自動修正は行わない（RF-43）。
