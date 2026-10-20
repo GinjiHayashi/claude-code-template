@@ -14,7 +14,7 @@ allowed-tools: Bash(bash .claude/scripts/audit.sh)
 
 ## 診断
 3. tech.md のテスト、リント、ビルドを実行する（RF-28）。失敗したら P0 の指摘にし、自動修正は行わない（RF-43）。
-4. `bash .claude/scripts/audit.sh` で機械の観点の指摘を得る。
+4. `bash .claude/scripts/audit.sh` で機械の観点の指摘を得る。`bash .claude/scripts/progress.sh` の「残した P2 など」も、まだ当てはまるものを P2 の指摘に加える（REV-11）。
 5. code-auditor と docs-auditor を並行して呼ぶ。渡すのは点検の対象（ディレクトリか「全体」）だけにする。
 6. 3〜5 の指摘をまとめる。ルール ID のない P0・P1 と存在しない ID の指摘は除き、同じ箇所の重複は1件にする。
 7. 各指摘を RF-40 で分類し、一覧と修正計画（直す順と、新しく足すファイル。RF-41）を TASK の「完了したこと」に書く。
