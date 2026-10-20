@@ -6,6 +6,8 @@
 #   branch.sh start hotfix                 main の最新のタグから hotfix/v<次のパッチ版> を切る
 #   branch.sh pr                           プッシュし、現在のブランチの開いている PR がなければ下書き PR を作って、URL を出力する
 #                                          （同名のブランチのマージ済み PR は対象にしない。ready・merge も開いている PR を対象にする）
+#   branch.sh pr-body                      PR 本文の「含まれる作業」「レビュー」の表を、このブランチの TASK（題名・related・作業ログの
+#                                          レビューの記録・未解決事項の P2）から作り直す。ほかの節は残す（origin がなければ表を出力する）
 #   branch.sh ready                        プッシュして PR の下書きを解除し、HEAD の CI の結果を待つ（origin がなければ ci.sh を実行する）
 #   branch.sh merge                        HEAD の CI の成功を確かめて PR をマージし、develop を最新にする（hotfix/ は main へ入れ、ブランチを残す。
 #                                          CI の取り消しは1回だけ再実行し、GitHub の一時的な失敗（5xx）のマージは3回まで試す。
@@ -222,6 +224,83 @@ cmd_merge() {
   printf 'マージした: %s → %s\n' "$branch" "$base"
 }
 
+# このブランチで作成・変更した TASK のファイルを1行1件で返す。
+branch_tasks() {
+  local base fork
+  case "$1" in hotfix/*) base=$(upstream_of main) ;; *) base=$(upstream_of develop) ;; esac
+  fork=$(git merge-base HEAD "$base" 2>/dev/null) || fork=HEAD
+  { git diff --name-only "$fork" -- docs/project/tasks/; git ls-files --others --exclude-standard -- docs/project/tasks/; } \
+    | grep -E '^docs/project/tasks/TASK-[0-9]+-.*\.md$' | sort -u | while IFS= read -r file; do
+      [ -f "$file" ] && printf '%s\n' "$file"
+    done
+}
+
+# PR 本文の「含まれる作業」と「レビュー」の表を、TASK の題名・related と作業ログのレビューの記録から作る（T-07）。
+# レビューの記録は review-loop が書く「<種別> r<ラウンド>: P0=n P1=n P2=n 保留=n」の形の作業ログを読む。
+pr_tables() {
+  local file id title related
+  echo "## 含まれる作業"
+  echo
+  echo "| TASK | 内容 | 関連（REQ / DES / ADR） |"
+  echo "|---|---|---|"
+  while IFS= read -r file; do
+    id=$(basename "$file" | sed 's/^\(TASK-[0-9]*\)-.*/\1/')
+    title=$(awk '/^# / { sub(/^# TASK-[0-9]+ /, ""); print; exit }' "$file")
+    related=$(awk '/^related:/ { sub(/^related:[ \t]*/, ""); sub(/[ \t]+#.*$/, ""); gsub(/[][]/, ""); print; exit }' "$file")
+    echo "| $id | $title | ${related:-（なし）} |"
+  done < <(branch_tasks "$1")
+  echo
+  echo "## レビュー"
+  echo
+  echo "| 対象 | ラウンド数 | P0 / P1 / P2 | 保留・残した P2 |"
+  echo "|---|---|---|---|"
+  while IFS= read -r file; do
+    id=$(basename "$file" | sed 's/^\(TASK-[0-9]*\)-.*/\1/')
+    awk -v id="$id" '
+      /^## / { section = $0 }
+      section == "## 未解決事項" && /^- P2/ { left++ }
+      /^- [0-9-]+ [^:]*: (plan|test|code) r[0-9]+: P0=[0-9]+ P1=[0-9]+ P2=[0-9]+ 保留=[0-9]+/ {
+        match($0, /(plan|test|code) r[0-9]+:/); kind = substr($0, RSTART, RLENGTH - 1); split(kind, k, " r")
+        if (!(k[1] in rounds)) order[++n] = k[1]
+        rounds[k[1]] = k[2] + 0
+        match($0, /P0=[0-9]+ P1=[0-9]+ P2=[0-9]+ 保留=[0-9]+/); counts = substr($0, RSTART, RLENGTH)
+        split(counts, c, /[ =]/); last[k[1]] = c[2] " / " c[4] " / " c[6]; held[k[1]] = c[8]
+      }
+      END {
+        for (i = 1; i <= n; i++) {
+          extra = (i == n) ? "、残した P2 " left + 0 : ""
+          printf "| %s %s | %d | %s | 保留 %s%s |\n", id, order[i], rounds[order[i]], last[order[i]], held[order[i]], extra
+        }
+      }
+    ' "$file"
+  done < <(branch_tasks "$1")
+}
+
+cmd_pr_body() {
+  [ $# -eq 0 ] || fail "pr-body は引数を取らない"
+  local branch number body tables tmp
+  branch=$(current_branch)
+  tables=$(pr_tables "$branch")
+  if ! has_origin; then
+    printf '%s\n' "$tables"
+    return 0
+  fi
+  number=$(require_open_pr "$branch")
+  body=$(gh pr view "$number" --json body --jq .body)
+  tmp=$(mktemp)
+  # 2つの節を作り直した表に置き換え、ほかの節（目的・検証・人間確認の項目）はそのまま残す。
+  TABLES="$tables" awk '
+    BEGIN { tables = ENVIRON["TABLES"] }
+    /^## 含まれる作業$/ { print tables; print ""; skipping = 1; next }
+    /^## レビュー$/ { skipping = 1; next }
+    /^## / || /^<!--/ { skipping = 0 }
+    !skipping { print }
+  ' <<< "$body" > "$tmp"
+  gh pr edit "$number" --body-file "$tmp" >/dev/null
+  rm -f "$tmp"
+  gh pr view "$number" --json url --jq .url
+}
+
 cmd_link() {
   local sha
   if [ "${1-}" = "--commit" ]; then
@@ -244,11 +323,12 @@ cmd_link() {
   printf '%s/compare/%s..%s\n' "$(web_url)" "$(git rev-parse --short=12 "$sha")" "$(git rev-parse --short=12 HEAD)"
 }
 
-[ $# -ge 1 ] || fail "サブコマンド（start / pr / ready / merge / link）を指定する"
+[ $# -ge 1 ] || fail "サブコマンド（start / pr / pr-body / ready / merge / link）を指定する"
 sub="$1"; shift
 case "$sub" in
   start) cmd_start "$@" ;;
   pr) cmd_pr "$@" ;;
+  pr-body) cmd_pr_body "$@" ;;
   ready) cmd_ready "$@" ;;
   merge) cmd_merge "$@" ;;
   link) cmd_link "$@" ;;
