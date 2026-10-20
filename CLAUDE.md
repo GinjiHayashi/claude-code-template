@@ -2,7 +2,7 @@
 
 ## このリポジトリについて
 - 目的と範囲は `docs/project/overview.md` を読む。
-- 開発の進め方は `docs/guidelines/workflow.md` に、各作業の手順は Skill（`.claude/skills/`）にある。`README.md` は人間向けの説明なので、作業のために読まなくてよい。
+- 開発の進め方は `docs/guidelines/workflow.md` に、各作業の手順は Skill（`.claude/skills/`）にある。`docs/harness.md`（ハーネスの説明）と直下の `README.md`（プロジェクトの紹介。`/kickoff` が書く）は人間向けなので、作業のために読まなくてよい。
 
 ## セッション開始時
 - SessionStart hook が進行中の TASK を表示する。表示された TASK の「次の一手」にある Skill を読み込み、その手順から再開する（DOC-14）。質問の途中なら PLAN-08 に従う。
@@ -28,5 +28,6 @@ IMPORTANT: 以下の禁止事項は例外なく守る。
 - `status: final` の ADR の本文を書き換えない（DOC-17）。
 
 ## やり取り
-- 文体は「である調」とする。
+- 応答、承認パケット、報告、TASK の記録、コミットの要約は、すべて日本語で書く（コード、コマンド、識別子はそのまま）。文体は「である調」とする。
+- 文脈が長くなって圧縮が必要なときは、Claude は `/compact` を実行できない。作業の状態を TASK とコミットに残してから、ユーザーに `/compact` の実行と、その後に「続けて」と言うことを頼む。
 - 質問の仕方は PLAN-01・PLAN-06・PLAN-07（`docs/guidelines/planning.md`）に従う。質問が2問以上になるときは、最初に質問の一覧（総数と各質問で聞くこと）を示してから1問ずつ聞く。

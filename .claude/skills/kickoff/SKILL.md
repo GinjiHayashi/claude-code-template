@@ -8,7 +8,7 @@ description: 新しいプロジェクトの開発を始めるとき、または 
 
 ## 準備
 1. 未読なら（圧縮で内容が消えた場合も）`docs/guidelines/planning.md`、`docs/guidelines/documentation.md`、`docs/guidelines/git.md` を読む。
-2. `bash .claude/scripts/task.sh begin feature/setup kickoff 開発開始` で作業ブランチと TASK を作る（develop がなければ、README の準備をユーザーに頼んで止まる）。
+2. `bash .claude/scripts/task.sh begin feature/setup kickoff 開発開始` で作業ブランチと TASK を作る（develop がなければ、docs/harness.md 2.1 の準備をユーザーに頼んで止まる）。
 
 ## テンプレートの用意
 3. `docs/project/` に overview.md、tech.md、glossary.md がなければ、`docs/guidelines/templates/` からコピーする。
@@ -25,5 +25,7 @@ description: 新しいプロジェクトの開発を始めるとき、または 
 
 ## 完了
 10. コミットし、`bash .claude/scripts/branch.sh pr` でプッシュと下書き PR を作る。承認パケット（GIT-30）で承認を求める。glossary.md の「コード上の名前」と ci.yml の準備も承認の対象に含め、差分リンクは起点のコミットからにする。返答の後に PR へのコメントも読む（GIT-32）。
-11. 承認されたら3つのファイルを `status: final` にし、TASK を `done` にしてコミット・プッシュする。PR はマージしない（要件定義と同じブランチで続ける）。
-12. 次は `/plan-spec` で要件定義に進むと伝える。
+11. 承認されたら3つのファイルを `status: final` にする。
+12. 直下の README.md を、`docs/guidelines/templates/readme.md` をもとにプロジェクトの説明に書き換える。内容は承認した overview.md・tech.md の要約とリンクだけにする（DOC-01）。
+13. TASK を `done` にしてコミット・プッシュする。PR はマージしない（要件定義と同じブランチで続ける）。
+14. 次は `/plan-spec` で要件定義に進むと伝える。
