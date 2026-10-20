@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 作業ブランチの作成、PR の作成・下書きの解除・マージ、承認用の差分リンクの出力を行う。規則は docs/guidelines/git.md（GIT-04・21〜25・31・33・61）。
 # 使い方:
-#   branch.sh start <ブランチ名>           develop の最新から作業ブランチを切る（既にあれば切り替える）。起点のコミットを出力する
+#   branch.sh start <ブランチ名>           develop の最新から作業ブランチを切る（マージされていない同名のブランチがあれば切り替え、
+#                                          マージ済みなら止める。GIT-06）。起点のコミットを出力する
 #   branch.sh start hotfix                 main の最新のタグから hotfix/v<次のパッチ版> を切る
 #   branch.sh pr                           現在のブランチの PR がなければプッシュして下書き PR を作り、URL を出力する
 #   branch.sh ready                        プッシュして PR の下書きを解除し、CI の結果を待つ（origin がなければ ci.sh を実行する）
@@ -43,11 +44,24 @@ web_url() {
   printf '%s' "$url"
 }
 
+# 同名のブランチ（ローカル、origin）が target にマージ済みなら止める（GIT-06）。マージされていなければ再利用できる。
+refuse_merged() {
+  local name="$1" target="$2" ref
+  git rev-parse --verify --quiet "$target" >/dev/null || return 0
+  for ref in "refs/heads/$name" "refs/remotes/origin/$name"; do
+    git show-ref --verify --quiet "$ref" || continue
+    # 切った直後でコミットがまだないブランチ（target と同じコミット）は再利用してよい。
+    [ "$(git rev-parse "$ref")" != "$(git rev-parse "$target")" ] || continue
+    git merge-base --is-ancestor "$ref" "$target" || continue
+    fail "$name は ${target#origin/} にマージ済み（${ref#refs/}）のため再利用しない（GIT-06）。別の名前にするか、古いブランチを消す（git branch -D $name）"
+  done
+}
+
 cmd_start() {
   [ $# -eq 1 ] || fail "start <ブランチ名 | hotfix>"
   local name="$1" base tag version major minor patch
   [ -z "$(git status --porcelain --untracked-files=no)" ] || fail "コミットしていない変更がある。コミットしてから切り替える（GIT-10）"
-  if has_origin; then git fetch --quiet --tags origin; fi
+  if has_origin; then git fetch --quiet --tags --prune origin; fi
   if [ "$name" = hotfix ]; then
     tag=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$(upstream_of main)" 2>/dev/null) \
       || fail "main にリリースのタグがない。hotfix はリリースの後だけ使う（GIT-60）"
@@ -59,6 +73,7 @@ cmd_start() {
     case "$name" in feature/?*) ;; *) fail "作業ブランチは feature/ で始める（GIT-03）: $name" ;; esac
     base=$(upstream_of develop)
   fi
+  case "$name" in hotfix/*) refuse_merged "$name" "$(upstream_of main)" ;; *) refuse_merged "$name" "$base" ;; esac
   if git show-ref --verify --quiet "refs/heads/$name"; then
     git switch --quiet "$name"
     if has_origin && git rev-parse --verify --quiet "origin/$name" >/dev/null; then
