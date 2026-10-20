@@ -31,10 +31,11 @@ argument-hint: "<DES-ID>"
 12. 振る舞いを変えずに整理し、変更のたびに対象のテストファイルを実行する。整理を終えたら「テスト（全件）」を1回だけ実行し、既存のテストを含めて成功させてからコミットする（TEST-07・08）。
 
 ## コードのレビュー
-13. `/review-loop code` で、凍結コミット（削除だけの DES は 3 のコミット）からの差分をレビューし、終わったらコミットする。
+13. `/review-loop code` で、凍結コミット（削除だけの DES は 3 のコミット）からの差分をレビューする。
 
 ## 完了
-14. `bash .claude/scripts/branch.sh pr` でプッシュする。この DES で作業ブランチの範囲（GIT-03 の表）の実装がすべて終わるなら、PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行する。
-15. 人間確認の項目を承認パケット（GIT-30）で示して確認を求める。差分リンクは、テストを `branch.sh link --commit <凍結コミット>`、実装を `branch.sh link <凍結コミット>` で作る。返答の後に PR へのコメントも読む（GIT-32）。
-16. TASK を `done` にしてコミットする。範囲の実装がすべて終わっていれば `bash .claude/scripts/branch.sh merge` でマージする。設計の誤りを見つけていたら WF-13 に従う。
-17. `bash .claude/scripts/progress.sh` の「プロジェクト全体の点検の材料」が WF-25 に当たれば、`/refactor` の実行を1行で提案する。
+14. TASK を `done` にし、レビューの記録と合わせてコミットする。`bash .claude/scripts/branch.sh pr` でプッシュし、test-items.md の対象 DES の人間確認の項目を PR 本文の「人間確認の項目」に足す（TEST-13）。この DES で作業ブランチの範囲（GIT-03 の表）の実装がすべて終わらないなら、確認は求めずに次の DES の `/implement-tdd` に進む。
+15. 範囲の最後の DES なら、PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行する（CI を待つのはこの1回）。
+16. 範囲の全 DES の人間確認の項目を、1つの承認パケット（GIT-30）で示して確認を求める。差分リンクは PR のリンクと、DES ごとのテストの `branch.sh link --commit <凍結コミット>` にする。返答の後に PR へのコメントも読む（GIT-32）。
+17. 確認を得たら、結果を範囲の最後の TASK に `task.sh log` で書いてコミット・プッシュし（TASK だけの変更なので CI は開発コマンドを飛ばす。GIT-24）、`bash .claude/scripts/branch.sh merge` でマージする。直す点があれば、該当する DES の TASK を `in-progress` に戻して 10 からやり直す（テストの誤りは TEST-05、設計の誤りは WF-13）。
+18. `bash .claude/scripts/progress.sh` の「プロジェクト全体の点検の材料」が WF-25 に当たれば、`/refactor` の実行を1行で提案する。

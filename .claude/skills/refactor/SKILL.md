@@ -30,5 +30,5 @@ allowed-tools: Bash(bash .claude/scripts/audit.sh)
 
 ## 完了
 13. 変更要求の候補を TASK の「未解決事項」に一覧で書く（RF-45）。
-14. PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行し、直した内容、レビュー結果、変更要求の候補を承認パケット（差分リンクは起点のコミットから）で示して確認を求める。候補を直す場合は1件ずつ `/plan-spec change` で進めると伝える。
-15. TASK を `done` にしてコミットし、`bash .claude/scripts/branch.sh merge` でマージする。
+14. TASK を `done` にしてコミットし、PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行し（CI を待つのはこの1回）、直した内容、レビュー結果、変更要求の候補を承認パケット（差分リンクは起点のコミットから）で示して確認を求める。候補を直す場合は1件ずつ `/plan-spec change` で進めると伝える。
+15. 確認を得たら、結果を `task.sh log` で書いてコミット・プッシュし、`bash .claude/scripts/branch.sh merge` でマージする。

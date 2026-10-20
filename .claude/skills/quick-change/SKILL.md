@@ -25,6 +25,6 @@ argument-hint: "[hotfix] <変更内容>"
 9. 振る舞いが DES の記述と変わった場合は、DES と test-items.md を直して `/review-loop plan` でレビューする。
 
 ## 完了
-10. PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行する。変更内容、レビュー結果、人間確認が要る点を承認パケット（GIT-30。差分リンクは起点のコミットから）で示して確認を求める。返答の後に PR へのコメントも読む（GIT-32）。
-11. TASK を `done` にしてコミットし、`bash .claude/scripts/branch.sh merge` でマージする。
+10. TASK を `done` にしてコミットし、PR 本文を最新にして `bash .claude/scripts/branch.sh ready` を実行する（CI を待つのはこの1回）。変更内容、レビュー結果、人間確認が要る点を承認パケット（GIT-30。差分リンクは起点のコミットから）で示して確認を求める。返答の後に PR へのコメントも読む（GIT-32）。
+11. 確認を得たら、結果を `task.sh log` で書いてコミット・プッシュし、`bash .claude/scripts/branch.sh merge` でマージする。直す点があれば TASK を `in-progress` に戻して直す。
 12. hotfix の場合は、11 の後に続けて行う。(1) `main` のマージコミットに `/release` の手順 8 と同じくタグとリリースノートを付ける (2) hotfix ブランチに戻り、`develop` 向きの PR を `gh pr create --base develop` で作り、CI の成功を確かめてマージする。コンフリクトしたら hotfix ブランチに `git merge develop` で取り込んで解消し、テスト・リント・ビルドを成功させてから入れる (3) hotfix ブランチを削除する
