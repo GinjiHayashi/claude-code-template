@@ -330,7 +330,7 @@ docs 内の各資料に何を書くか、いつ読むかは [`docs/README.md`](R
 ├── .claude/
 │   ├── settings.json          # 権限、hooks、応答言語（日本語）
 │   ├── hooks/                 # session-start / freeze-guard / branch-guard / format と共通関数 lib.sh
-│   ├── scripts/               # 定型の操作（task.sh、branch.sh、ci.sh、progress.sh、audit.sh、create-repo.sh、update-harness.sh。使い方は各スクリプトの冒頭）
+│   ├── scripts/               # 定型の操作（task.sh、branch.sh、ci.sh、progress.sh、audit.sh、plan-lint.sh、test-list.sh、create-repo.sh、update-harness.sh。使い方は各スクリプトの冒頭）
 │   ├── agents/                # レビュー（plan / test / code-reviewer）と全体点検（code / docs-auditor）のサブエージェント
 │   └── skills/                # 作業の手順。/kickoff /plan-spec /implement-tdd /review-loop /quick-change /progress /refactor /release
 └── docs/

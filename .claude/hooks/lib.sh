@@ -59,6 +59,38 @@ to_relative() {
   printf '%s' "${path#./}"
 }
 
+PROJECT_DIR="$ROOT/docs/project"
+TEST_ITEMS="$PROJECT_DIR/test-items.md"
+
+# ID（例: DES-003）の資料ファイルを返す。なければ空。
+document_of() {
+  local folder
+  case "$1" in
+    REQ-*) folder=requirements ;; DES-*) folder=design ;; ADR-*) folder=adr ;; TASK-*) folder=tasks ;; *) return 0 ;;
+  esac
+  ls "$PROJECT_DIR/$folder/$1"-*.md 2>/dev/null | head -n 1
+}
+
+# 資料（ファイルかフォルダ）の中の資料 ID の参照のうち、資料が存在しないものを「パス:行:ID」で1行1件返す。
+missing_documents_in() {
+  local reference id
+  grep -rHnoE '(REQ|DES|TASK)-[0-9]{3}|ADR-[0-9]{4}' "$@" 2>/dev/null | while IFS= read -r reference; do
+    id=${reference##*:}
+    case "$id" in *-000|*-0000) continue ;; esac
+    [ -n "$(document_of "$id")" ] || printf '%s\n' "$reference"
+  done
+}
+
+# test-items.md（$2 で別のファイルも指定できる）の見出し「## DES-xxx」の下にある表の項目番号を1行1件で返す。
+test_item_numbers_of() {
+  local file="${2:-$TEST_ITEMS}"
+  [ -f "$file" ] || return 0
+  awk -v id="$1" '
+    /^## / { inside = (index($0, "## " id " ") == 1 || $0 == "## " id); next }
+    inside && /^\| *[0-9]+ *\|/ { n = $0; sub(/^\| */, "", n); sub(/ *\|.*$/, "", n); print n }
+  ' "$file"
+}
+
 # tech.md の「開発コマンド」表から、指定した操作の欄をそのまま返す（バッククォートは除く）。
 tech_value() {
   local operation="$1"
