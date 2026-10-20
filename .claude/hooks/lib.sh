@@ -90,6 +90,14 @@ front_matter_value() {
   ' "$file"
 }
 
+# 見出し $2（例: "## 次の一手"）のセクション本文（> の説明行と空行を除く）を返す。
+section_of() {
+  awk -v heading="$2" '
+    /^## / { show = ($0 == heading); next }
+    show && !/^>/ && NF { print }
+  ' "$1"
+}
+
 # フロントマターの related（例: [REQ-001, REQ-002]）を空白区切りで返す。
 related_of() {
   front_matter_value "$1" related | tr -d '[]' | tr ',' ' '

@@ -13,14 +13,6 @@ title_of() {
   awk '/^# / { sub(/^# /, ""); print; exit }' "$1"
 }
 
-# 見出し $2 のセクション本文（> の説明行と空行を除く）を返す。
-section_of() {
-  awk -v heading="$2" '
-    /^## / { show = ($0 == heading); next }
-    show && !/^>/ && NF { print }
-  ' "$1"
-}
-
 # 指定フォルダの資料（例: REQ-*.md）を番号順に1行1件で返す。
 documents_in() {
   local file

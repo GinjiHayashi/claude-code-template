@@ -1,7 +1,30 @@
 #!/usr/bin/env bash
 # SessionStart: 進行中の TASK の「現在のフェーズ」と「次の一手」を Claude に渡す。
+# 進行中の TASK がなければ、次の作業の手がかり（todo の TASK か、最後に done になった TASK の「次の一手」）を渡す。
 set -u
 . "$(dirname "$0")/lib.sh"
+
+# 次の作業の手がかりを1行で出力する。「次の一手」が書かれた todo の TASK（番号の小さい順）を優先し、
+# なければ最後に done になった TASK（番号の最も大きいもの）の「次の一手」を使う。
+# TASK のファイル名には空白を含めない（task.sh が作る）ため、空白区切りで持つ。
+print_next_hint() {
+  local task status todo="" done_task="" next
+  [ -d "$TASKS_DIR" ] || return 0
+  for task in "$TASKS_DIR"/TASK-*.md; do
+    [ -f "$task" ] || continue
+    status=$(front_matter_value "$task" status)
+    if [ "$status" = "todo" ]; then todo="$todo $task"; fi
+    if [ "$status" = "done" ]; then done_task="$task"; fi
+  done
+  for task in $todo $done_task; do
+    next=$(section_of "$task" "## 次の一手" | paste -sd ' ' -)
+    case "$next" in ""|"（未記入）"*|"（なし）"*) continue ;; esac
+    printf '次の作業の手がかり: %s（status: %s）の「次の一手」: %s\n' \
+      "$(to_relative "$task")" "$(front_matter_value "$task" status)" "$next"
+    echo "/progress（WF-23）で次の作業を確かめ、ユーザーに確認してから始める。"
+    return 0
+  done
+}
 
 tasks=$(in_progress_tasks)
 if [ -z "$tasks" ]; then
@@ -18,6 +41,7 @@ if [ -z "$tasks" ]; then
       ;;
   esac
   echo "進行中・中断中の TASK はない。ユーザーに次の作業を確認する。"
+  print_next_hint
   exit 0
 fi
 
@@ -25,9 +49,9 @@ echo "進行中・中断中の TASK がある。「次の一手」から再開�
 while IFS= read -r task; do
   echo
   echo "## $(to_relative "$task")（status: $(front_matter_value "$task" status)）"
-  awk '
-    /^## / { show = ($0 == "## 現在のフェーズ" || $0 == "## 次の一手") }
-    show && !/^>/ && NF { print }
-  ' "$task"
+  for heading in "## 現在のフェーズ" "## 次の一手"; do
+    echo "$heading"
+    section_of "$task" "$heading"
+  done
 done <<< "$tasks"
 exit 0
